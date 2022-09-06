@@ -1,14 +1,20 @@
 use log::error;
+use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-pub fn extract(bamp: &String, every: usize) -> (Vec<u32>, Vec<f32>) {
+pub fn extract(bamp: &String, every: usize, threads: usize) -> (Vec<u32>, Vec<f32>) {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .unwrap();
     let mut bam = check_bam(bamp);
     bam.fetch(".").unwrap();
     if every == 1 {
         bam.records()
+            .par_bridge()
             .map(|r| r.unwrap())
             .filter(check_read)
             .map(extract_from_read)
@@ -17,6 +23,7 @@ pub fn extract(bamp: &String, every: usize) -> (Vec<u32>, Vec<f32>) {
         bam.records()
             .enumerate()
             .filter(|(index, _)| index % every == 0)
+            .par_bridge()
             .map(|(_, r)| r.unwrap())
             .filter(check_read)
             .map(extract_from_read)
