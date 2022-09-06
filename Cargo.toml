@@ -10,8 +10,7 @@ clap = { version = "3.2.6", features = ["derive"] }
 rust-htslib = "*"
 log = "0.4.0"
 env_logger = "0.8.4"
-bam = "0.1.4"
-rand = "0.8.5"
+checksums = "0.9.1"
 
 [dev-dependencies]
 ctor = "*"
