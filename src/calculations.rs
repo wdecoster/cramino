@@ -10,14 +10,12 @@ pub fn get_n50(lengths: &Vec<u32>, nb_bases_total: u32) -> u32 {
     lengths[lengths.len() - 1]
 }
 
-/// Take the median of the lengths of the STRs, relative to the reference genome
-/// If the vector is empty then return NAN
-pub fn median(array: &Vec<u32>) -> f32 {
+pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
-        (array[ind_left] + array[ind_right]) as f32 / 2.0
+        (array[ind_left].into() + array[ind_right].into()) / 2.0
     } else {
-        array[(array.len() / 2)] as f32
+        array[(array.len() / 2)].into()
     }
 }
