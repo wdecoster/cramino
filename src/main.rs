@@ -10,13 +10,13 @@ pub mod file_info;
 #[structopt(global_settings=&[DeriveDisplayOrder])]
 #[clap(author, version, about="Tool to extract QC metrics from bam", long_about = None)]
 struct Cli {
-        /// bam file to check
-        #[clap(value_parser)]
-        bam: String,
+    /// bam file to check
+    #[clap(value_parser)]
+    bam: String,
 
-        /// Number of parallel threads to use
-        #[clap(short, long, value_parser, default_value_t = 8)]
-        threads: usize,
+    /// Number of parallel threads to use
+    #[clap(short, long, value_parser, default_value_t = 8)]
+    threads: usize,
 }
 
 fn main() {
@@ -27,22 +27,16 @@ fn main() {
     info!("Finished");
 }
 
-///extract metrics from a bam file by subsampling reads
-fn extract_metrics(bamp: String, fraction: f32, threads: usize) {
-    // the fraction determines how many reads to skip every time by inverting it
-    // every "inverse"th read is used
-    let inverse = (1.0 / fraction) as usize;
-    let (mut lengths, mut pids): (Vec<u32>, Vec<f32>) =
-        extract_from_bam::extract(&bamp, inverse, threads);
-    // to get the yield, sum all lengths of the selected reads and multiply that again by the inverse of the fraction
+fn metrics_from_bam(bam: String, threads: usize) {
+    let (mut lengths, mut pids): (Vec<u32>, Vec<f32>) = extract_from_bam::extract(&bam, threads);
     if lengths.len() < 2 {
         error!("Not enough reads to calculate metrics!");
         panic!();
     }
     lengths.sort_unstable();
     pids.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-    let data_yield: u32 = lengths.iter().sum::<u32>() * inverse as u32;
-    let numreads = lengths.len() * inverse;
+    let data_yield: u32 = lengths.iter().sum::<u32>();
+    let num_reads = lengths.len();
     let n50 = calculations::get_n50(&lengths, data_yield);
     let median_length = calculations::median(&lengths);
     let median_pid = calculations::median(&pids);
@@ -71,5 +65,5 @@ fn verify_app() {
 
 #[test]
 fn extract() {
-    extract_metrics("~/test-data/test.bam".to_string(), 0.01, 8)
+    metrics_from_bam("/home/wdecoster/test-data/test.bam".to_string(), 8)
 }
