@@ -28,18 +28,19 @@ fn main() {
 }
 
 fn metrics_from_bam(bam: String, threads: usize) {
-    let (mut lengths, mut pids): (Vec<u32>, Vec<f32>) = extract_from_bam::extract(&bam, threads);
+    let (mut lengths, mut identities): (Vec<u32>, Vec<f32>) =
+        extract_from_bam::extract(&bam, threads);
     if lengths.len() < 2 {
         error!("Not enough reads to calculate metrics!");
         panic!();
     }
     lengths.sort_unstable();
-    pids.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     let data_yield: u32 = lengths.iter().sum::<u32>();
     let num_reads = lengths.len();
     let n50 = calculations::get_n50(&lengths, data_yield);
     let median_length = calculations::median(&lengths);
-    let median_pid = calculations::median(&pids);
+    let median_pid = calculations::median(&identities);
     // get histograms for pid and length
     let bam = file_info::BamFile { path: bam };
     let bam_name = bam.file_name();
