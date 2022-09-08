@@ -1,5 +1,5 @@
 use clap::AppSettings::DeriveDisplayOrder;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use log::{error, info};
 pub mod calculations;
 pub mod extract_from_bam;
@@ -8,46 +8,23 @@ pub mod file_info;
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
 #[structopt(global_settings=&[DeriveDisplayOrder])]
-#[clap(author, version, about="Tool to extract QC metrics from bam by sampling", long_about = None)]
+#[clap(author, version, about="Tool to extract QC metrics from bam", long_about = None)]
 struct Cli {
-    #[clap(subcommand)]
-    command: Commands,
-}
-// Every subcommand is a variation of the Commands Enum, and has its arguments defined below
-#[derive(Debug, Subcommand)]
-enum Commands {
-    /// extract metrics
-    #[clap(arg_required_else_help = true)]
-    Extract {
         /// bam file to check
         #[clap(value_parser)]
         bam: String,
 
-        /// fraction of reads to use
-        #[clap(short, long, value_parser, default_value_t = 0.01)]
-        fraction: f32,
-
         /// Number of parallel threads to use
         #[clap(short, long, value_parser, default_value_t = 8)]
         threads: usize,
-    },
-    Combine {},
 }
 
 fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
-    match args.command {
-        Commands::Extract {
-            bam,
-            fraction,
-            threads,
-        } => extract_metrics(bam, fraction, threads),
-        Commands::Combine {} => {
-            unimplemented!();
-        }
-    }
+    metrics_from_bam(args.bam, args.threads);
+    info!("Finished");
 }
 
 ///extract metrics from a bam file by subsampling reads
