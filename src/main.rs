@@ -70,12 +70,13 @@ fn extract_metrics(bamp: String, fraction: f32, threads: usize) {
     let median_length = calculations::median(&lengths);
     let median_pid = calculations::median(&pids);
     // get histograms for pid and length
-    let bamname = file_info::file_name(&bamp);
-    let checksum = file_info::checksum(&bamp);
-    let file_time = file_info::file_time(&bamp);
+    let bam = file_info::BamFile { path: bam };
+    let bam_name = bam.file_name();
+    let checksum = bam.checksum();
+    let file_time = bam.file_time();
     println!("bam\tnumber_of_reads\tyield\tn50\tmedian_length\tmedian_pid\thistogram_length\thistogram_pid\tbam_path\tbam_checksum\tbam_created");
     println!(
-        "{bamname}\t{numreads}\t{data_yield}\t{n50}\t{median_length}\t{median_pid}\t{bamp}\t{checksum}\t{file_time}"
+        "{bam_name}\t{num_reads}\t{data_yield}\t{n50}\t{median_length}\t{median_pid}\t{bam}\t{checksum}\t{file_time}"
     )
 }
 
