@@ -7,13 +7,15 @@ use rust_htslib::{bam, bam::Read}; // for BAM_F*
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-pub fn extract(bamp: &String, _threads: usize) -> (Vec<u32>, Vec<f32>) {
+pub fn extract(bamp: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
     // rayon::ThreadPoolBuilder::new()
     //     .num_threads(threads)
     //     .build()
     //     .unwrap();
     let mut bam = check_bam(bamp);
-    bam.fetch(".").unwrap();
+    bam.set_threads(threads)
+        .expect("Failure setting decompression threads");
+    bam.fetch(".").expect("Failure fetching reads");
     bam.rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
