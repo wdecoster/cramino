@@ -1,7 +1,9 @@
 use log::error;
 //use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
-use rust_htslib::{bam, bam::Read};
+use rust_htslib::htslib;
+use rust_htslib::{bam, bam::Read}; // for BAM_F*
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -12,10 +14,10 @@ pub fn extract(bamp: &String, _threads: usize) -> (Vec<u32>, Vec<f32>) {
     //     .unwrap();
     let mut bam = check_bam(bamp);
     bam.fetch(".").unwrap();
-    bam.records()
-        .map(|r| r.unwrap())
-        .filter(check_read)
-        .map(extract_from_read)
+    bam.rc_records()
+        .map(|r| r.expect("Failure parsing Bam file"))
+        .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .map(|read| (read.seq_len() as u32, pid_from_cigar(read)))
         .unzip()
 }
 
@@ -33,15 +35,7 @@ fn check_bam(bamp: &String) -> bam::IndexedReader {
     }
 }
 
-fn check_read(read: &bam::Record) -> bool {
-    !read.is_unmapped() && !read.is_secondary()
-}
-
-fn extract_from_read(read: bam::Record) -> (u32, f32) {
-    (read.seq_len() as u32, pid_from_cigar(read))
-}
-
-fn pid_from_cigar(r: bam::Record) -> f32 {
+fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
     let mut operations: HashMap<&str, u32> = HashMap::from([("match", 0), ("del", 0), ("ins", 0)]);
     for entry in r.cigar().iter() {
         match entry {
