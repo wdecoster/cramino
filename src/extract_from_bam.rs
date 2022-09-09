@@ -3,8 +3,6 @@ use log::error;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::htslib;
 use rust_htslib::{bam, bam::Read}; // for BAM_F*
-
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub fn extract(bamp: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
@@ -38,22 +36,24 @@ fn check_bam(bamp: &String) -> bam::IndexedReader {
 }
 
 fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
-    let mut operations: HashMap<&str, u32> = HashMap::from([("match", 0), ("del", 0), ("ins", 0)]);
+    let mut matches = 0;
+    let mut dels = 0;
+    let mut ins = 0;
     for entry in r.cigar().iter() {
         match entry {
             Cigar::Match(len) | Cigar::Equal(len) | Cigar::Diff(len) => {
-                *operations.entry("match").or_insert(0) += *len;
+                matches += *len;
             }
             Cigar::Del(len) => {
-                *operations.entry("del").or_insert(0) += *len;
+                dels += *len;
             }
             Cigar::Ins(len) => {
-                *operations.entry("ins").or_insert(0) += *len;
+                ins += *len;
             }
             _ => (),
         }
     }
-    let alignment_length = operations[&"match"] + operations[&"del"] + operations[&"ins"];
+    let alignment_length = matches + dels + ins;
 
     100.0 * (1.0 - get_nm_tag(&r) / alignment_length as f32)
 }
