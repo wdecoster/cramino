@@ -1,6 +1,8 @@
 use clap::AppSettings::DeriveDisplayOrder;
 use clap::Parser;
 use log::{error, info};
+use std::path::PathBuf;
+
 pub mod calculations;
 pub mod extract_from_bam;
 pub mod file_info;
@@ -11,12 +13,21 @@ pub mod file_info;
 #[clap(author, version, about="Tool to extract QC metrics from bam", long_about = None)]
 struct Cli {
     /// bam file to check
-    #[clap(value_parser)]
+    #[clap(value_parser, validator=is_file)]
     bam: String,
 
     /// Number of parallel threads to use
     #[clap(short, long, value_parser, default_value_t = 8)]
     threads: usize,
+}
+
+fn is_file(pathname: &str) -> Result<(), String> {
+    let path = PathBuf::from(pathname);
+    if path.is_file() {
+        Ok(())
+    } else {
+        Err(format!("Input file {} is invalid", path.display()))
+    }
 }
 
 fn main() {
