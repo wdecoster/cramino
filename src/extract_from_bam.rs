@@ -1,38 +1,21 @@
-use log::error;
 //use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::htslib;
 use rust_htslib::{bam, bam::Read}; // for BAM_F*
-use std::path::PathBuf;
 
-pub fn extract(bamp: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
+pub fn extract(bam_path: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
     // rayon::ThreadPoolBuilder::new()
     //     .num_threads(threads)
     //     .build()
     //     .unwrap();
-    let mut bam = check_bam(bamp);
+    let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    bam.fetch(".").expect("Failure fetching reads");
     bam.rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
         .map(|read| (read.seq_len() as u32, pid_from_cigar(read)))
         .unzip()
-}
-
-fn check_bam(bamp: &String) -> bam::IndexedReader {
-    if !PathBuf::from(bamp).is_file() {
-        error!("ERROR: path to bam file {bamp} is not valid!\n\n");
-        panic!();
-    };
-    match bam::IndexedReader::from_path(&bamp) {
-        Ok(handle) => handle,
-        Err(e) => {
-            error!("Error opening BAM {}.\n{}", bamp, e);
-            panic!();
-        }
-    }
 }
 
 fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
