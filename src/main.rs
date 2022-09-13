@@ -44,7 +44,7 @@ fn main() {
 }
 
 fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
-    let (mut lengths, mut identities): (Vec<u32>, Vec<f32>) =
+    let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) =
         extract_from_bam::extract(&bam, threads);
     let num_reads = lengths.len();
     if num_reads < 2 {
@@ -53,14 +53,17 @@ fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
     }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-    let data_yield: u32 = lengths.iter().sum::<u32>();
+    let data_yield: u64 = lengths.iter().sum::<u64>();
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
     println!("Number of reads\t{num_reads}");
-    println!("Yield\t{:.2}Gb", data_yield as f32 / 1e9);
+    println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
     println!("N50\t{}", calculations::get_n50(&lengths, data_yield));
-    println!("Median length\t{:.2}", calculations::median(&lengths));
-    println!("Mean length\t{:.2}", data_yield / num_reads as u32);
+    println!(
+        "Median length\t{:.2}",
+        calculations::median_length(&lengths)
+    );
+    println!("Mean length\t{:.2}", data_yield / num_reads as u64);
     println!("Median identity\t{:.2}", calculations::median(&identities));
     println!(
         "Mean identity\t{:.2}",
@@ -81,7 +84,7 @@ fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
     }
 }
 
-fn make_histogram_lengths(array: Vec<u32>) -> Histogram {
+fn make_histogram_lengths(array: Vec<u64>) -> Histogram {
     let mut histogram = Histogram::with_buckets(100, Some(2));
     for value in array.into_iter() {
         histogram.add(value as f64);

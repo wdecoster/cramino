@@ -3,7 +3,7 @@ use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::htslib;
 use rust_htslib::{bam, bam::Read}; // for BAM_F*
 
-pub fn extract(bam_path: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
+pub fn extract(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<f32>) {
     // rayon::ThreadPoolBuilder::new()
     //     .num_threads(threads)
     //     .build()
@@ -14,7 +14,7 @@ pub fn extract(bam_path: &String, threads: usize) -> (Vec<u32>, Vec<f32>) {
     bam.rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
-        .map(|read| (read.seq_len() as u32, pid_from_cigar(read)))
+        .map(|read| (read.seq_len() as u64, pid_from_cigar(read)))
         .unzip()
 }
 
