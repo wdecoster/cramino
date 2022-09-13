@@ -1,7 +1,8 @@
 use clap::AppSettings::DeriveDisplayOrder;
 use clap::Parser;
+use histo_fp::Histogram;
 use log::{error, info};
-use std::path::PathBuf;
+use std::{cmp::Ordering, path::PathBuf};
 
 pub mod calculations;
 pub mod extract_from_bam;
@@ -19,6 +20,10 @@ struct Cli {
     /// Number of parallel threads to use
     #[clap(short, long, value_parser, default_value_t = 4)]
     threads: usize,
+
+    /// If histograms have to be generated
+    #[clap(short, long, value_parser)]
+    hist: bool,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -34,33 +39,69 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
-    metrics_from_bam(args.bam, args.threads);
+    metrics_from_bam(args.bam, args.threads, args.hist);
     info!("Finished");
 }
 
-fn metrics_from_bam(bam: String, threads: usize) {
+fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
     let (mut lengths, mut identities): (Vec<u32>, Vec<f32>) =
         extract_from_bam::extract(&bam, threads);
-    if lengths.len() < 2 {
+    let num_reads = lengths.len();
+    if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
         panic!();
     }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     let data_yield: u32 = lengths.iter().sum::<u32>();
-    let num_reads = lengths.len();
-    let n50 = calculations::get_n50(&lengths, data_yield);
-    let median_length = calculations::median(&lengths);
-    let median_pid = calculations::median(&identities);
-    // get histograms for pid and length
     let bam = file_info::BamFile { path: bam };
-    let bam_name = bam.file_name();
-    let checksum = bam.checksum();
-    let file_time = bam.file_time();
-    println!("bam\tnumber_of_reads\tyield\tn50\tmedian_length\tmedian_pid\thistogram_length\thistogram_pid\tbam_path\tbam_checksum\tbam_created");
+    println!("File name\t{}", bam.file_name());
+    println!("Number of reads\t{num_reads}");
+    println!("Yield\t{:.2}Gb", data_yield as f32 / 1e9);
+    println!("N50\t{}", calculations::get_n50(&lengths, data_yield));
+    println!("Median length\t{:.2}", calculations::median(&lengths));
+    println!("Mean length\t{:.2}", data_yield / num_reads as u32);
+    println!("Median identity\t{:.2}", calculations::median(&identities));
     println!(
-        "{bam_name}\t{num_reads}\t{data_yield}\t{n50}\t{median_length}\t{median_pid}\t{bam}\t{checksum}\t{file_time}"
-    )
+        "Mean identity\t{:.2}",
+        identities.iter().sum::<f32>() / num_reads as f32
+    );
+    println!("Path\t{}", bam);
+    println!("Checksum\t{}", bam.checksum());
+    println!("Creation time\t{}", bam.file_time());
+    if hist {
+        println!(
+            "\n\nHistogram for lengths\n{}",
+            make_histogram_lengths(lengths)
+        );
+        println!(
+            "\n\nHistogram for identities\n{}",
+            make_histogram_identities(identities)
+        );
+    }
+}
+
+fn make_histogram_lengths(array: Vec<u32>) -> Histogram {
+    let mut histogram = Histogram::with_buckets(100, Some(2));
+    for value in array.into_iter() {
+        histogram.add(value as f64);
+    }
+
+    histogram
+}
+
+fn make_histogram_identities(array: Vec<f32>) -> Histogram {
+    let bins = 100.0
+        - array
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Less))
+            .unwrap();
+    let mut histogram = Histogram::with_buckets(bins as u64, None);
+    for value in array.into_iter() {
+        histogram.add(value as f64);
+    }
+
+    histogram
 }
 
 #[cfg(test)]
@@ -77,5 +118,5 @@ fn verify_app() {
 
 #[test]
 fn extract() {
-    metrics_from_bam("/home/wdecoster/test-data/test.bam".to_string(), 8)
+    metrics_from_bam("/home/wdecoster/test-data/test.bam".to_string(), 8, true)
 }
