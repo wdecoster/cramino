@@ -11,19 +11,23 @@ pub mod file_info;
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
 #[structopt(global_settings=&[DeriveDisplayOrder])]
-#[clap(author, version, about="Tool to extract QC metrics from bam", long_about = None)]
+#[clap(author, version, about="Tool to extract QC metrics from cram or bam", long_about = None)]
 struct Cli {
-    /// bam file to check
+    /// cram or bam file to check
     #[clap(value_parser, validator=is_file)]
-    bam: String,
+    input: String,
 
-    /// Number of parallel threads to use
+    /// Number of parallel decompression threads to use
     #[clap(short, long, value_parser, default_value_t = 4)]
     threads: usize,
 
     /// If histograms have to be generated
-    #[clap(short, long, value_parser)]
+    #[clap(long, value_parser)]
     hist: bool,
+
+    /// If a checksum has to be calculated
+    #[clap(long, value_parser)]
+    checksum: bool,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -39,11 +43,11 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
-    metrics_from_bam(args.bam, args.threads, args.hist);
+    metrics_from_bam(args.input, args.threads, args.hist, args.checksum);
     info!("Finished");
 }
 
-fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
+fn metrics_from_bam(bam: String, threads: usize, hist: bool, checksum: bool) {
     let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) =
         extract_from_bam::extract(&bam, threads);
     let num_reads = lengths.len();
@@ -70,8 +74,10 @@ fn metrics_from_bam(bam: String, threads: usize, hist: bool) {
         identities.iter().sum::<f32>() / num_reads as f32
     );
     println!("Path\t{}", bam);
-    println!("Checksum\t{}", bam.checksum());
     println!("Creation time\t{}", bam.file_time());
+    if checksum {
+        println!("Checksum\t{}", bam.checksum());
+    }
     if hist {
         println!(
             "\n\nHistogram for lengths\n{}",
@@ -121,5 +127,10 @@ fn verify_app() {
 
 #[test]
 fn extract() {
-    metrics_from_bam("/home/wdecoster/test-data/test.bam".to_string(), 8, true)
+    metrics_from_bam(
+        "/home/wdecoster/test-data/test.bam".to_string(),
+        8,
+        true,
+        true,
+    )
 }
