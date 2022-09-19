@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 pub mod calculations;
 pub mod extract_from_bam;
+pub mod feather;
 pub mod file_info;
 pub mod histograms;
 
@@ -28,6 +29,10 @@ struct Cli {
     /// If a checksum has to be calculated
     #[clap(long, value_parser)]
     checksum: bool,
+
+    /// Write data to a feather format
+    #[clap(long, value_parser)]
+    feather: Option<String>,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -43,11 +48,23 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
-    metrics_from_bam(args.input, args.threads, args.hist, args.checksum);
+    metrics_from_bam(
+        args.input,
+        args.threads,
+        args.hist,
+        args.checksum,
+        args.feather,
+    );
     info!("Finished");
 }
 
-fn metrics_from_bam(bam: String, threads: usize, hist: bool, checksum: bool) {
+fn metrics_from_bam(
+    bam: String,
+    threads: usize,
+    hist: bool,
+    checksum: bool,
+    feather: Option<String>,
+) {
     let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) =
         extract_from_bam::extract(&bam, threads);
     let num_reads = lengths.len();
@@ -88,29 +105,10 @@ fn metrics_from_bam(bam: String, threads: usize, hist: bool, checksum: bool) {
             histograms::make_histogram_identities(&identities)
         );
     }
-}
-
-fn make_histogram_lengths(array: Vec<u64>) -> Histogram {
-    let mut histogram = Histogram::with_buckets(100, Some(2));
-    for value in array.into_iter() {
-        histogram.add(value as f64);
+    match feather {
+        None => (),
+        Some(s) => feather::save_as_feather(s, lengths, identities),
     }
-
-    histogram
-}
-
-fn make_histogram_identities(array: Vec<f32>) -> Histogram {
-    let bins = 100.0
-        - array
-            .iter()
-            .min_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Less))
-            .unwrap();
-    let mut histogram = Histogram::with_buckets(bins as u64, None);
-    for value in array.into_iter() {
-        histogram.add(value as f64);
-    }
-
-    histogram
 }
 
 #[cfg(test)]
@@ -132,5 +130,6 @@ fn extract() {
         8,
         true,
         true,
+        Some("/home/wdecoster/temp/test.feather".to_string()),
     )
 }

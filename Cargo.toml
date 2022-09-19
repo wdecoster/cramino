@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,6 +14,7 @@ checksums = "0.9.1"
 chrono = "0.4.22"
 rayon = "1.5.3"
 histo_fp = "0.2.1"
+arrow = "22.0.0"
 
 [dev-dependencies]
 ctor = "*"
