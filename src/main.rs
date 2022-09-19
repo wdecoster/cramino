@@ -1,12 +1,12 @@
 use clap::AppSettings::DeriveDisplayOrder;
 use clap::Parser;
-use histo_fp::Histogram;
 use log::{error, info};
-use std::{cmp::Ordering, path::PathBuf};
+use std::path::PathBuf;
 
 pub mod calculations;
 pub mod extract_from_bam;
 pub mod file_info;
+pub mod histograms;
 
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
@@ -81,11 +81,11 @@ fn metrics_from_bam(bam: String, threads: usize, hist: bool, checksum: bool) {
     if hist {
         println!(
             "\n\nHistogram for lengths\n{}",
-            make_histogram_lengths(lengths)
+            histograms::make_histogram_lengths(&lengths)
         );
         println!(
             "\n\nHistogram for identities\n{}",
-            make_histogram_identities(identities)
+            histograms::make_histogram_identities(&identities)
         );
     }
 }
