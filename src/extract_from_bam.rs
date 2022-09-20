@@ -44,8 +44,8 @@ fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
 fn get_nm_tag(record: &bam::Record) -> f32 {
     match record.aux(b"NM") {
         Ok(value) => match value {
-            Aux::U8(v) => v as f32,
-            Aux::U16(v) => v as f32,
+            Aux::U8(v) => f32::from(v),
+            Aux::U16(v) => f32::from(v),
             Aux::U32(v) => v as f32,
             _ => panic!("Unexpected type of Aux {:?}", value),
         },

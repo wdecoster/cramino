@@ -18,7 +18,7 @@ pub fn make_histogram_identities(array: &[f32]) -> Histogram {
             .unwrap();
     let mut histogram = Histogram::with_buckets(bins as u64, None);
     for value in array.iter() {
-        histogram.add(*value as f64);
+        histogram.add(f64::from(*value));
     }
 
     histogram
