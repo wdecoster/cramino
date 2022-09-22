@@ -33,7 +33,7 @@ Path    alignment/example.cram
 Creation time   09/09/2022 10:53:36
 ```
 
-A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory.
+A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory. Note that the identity score above is defined as the [gap-compressed identity](https://lh3.github.io/2018/11/25/on-the-definition-of-sequence-identity).
 
 ### Optional output
 
