@@ -32,7 +32,7 @@ struct Cli {
 
     /// Write data to a feather format
     #[clap(long, value_parser)]
-    feather: Option<String>,
+    arrow: Option<String>,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -53,7 +53,7 @@ fn main() {
         args.threads,
         args.hist,
         args.checksum,
-        args.feather,
+        args.arrow,
     );
     info!("Finished");
 }
@@ -63,7 +63,7 @@ fn metrics_from_bam(
     threads: usize,
     hist: bool,
     checksum: bool,
-    feather: Option<String>,
+    arrow: Option<String>,
 ) {
     let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) =
         extract_from_bam::extract(&bam, threads);
@@ -105,9 +105,9 @@ fn metrics_from_bam(
             histograms::make_histogram_identities(&identities)
         );
     }
-    match feather {
+    match arrow {
         None => (),
-        Some(s) => feather::save_as_feather(s, lengths, identities),
+        Some(s) => feather::save_as_arrow(s, lengths, identities),
     }
 }
 
