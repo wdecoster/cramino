@@ -8,6 +8,7 @@ pub mod extract_from_bam;
 pub mod feather;
 pub mod file_info;
 pub mod histograms;
+pub mod karyotype;
 
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
@@ -33,6 +34,10 @@ struct Cli {
     /// Write data to a feather format
     #[clap(long, value_parser)]
     arrow: Option<String>,
+
+    /// Collect data on reads per chromosome
+    #[clap(long, value_parser)]
+    karyotype: bool,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -48,12 +53,14 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
+
     metrics_from_bam(
         args.input,
         args.threads,
         args.hist,
         args.checksum,
         args.arrow,
+        args.karyotype,
     );
     info!("Finished");
 }
@@ -64,9 +71,27 @@ fn metrics_from_bam(
     hist: bool,
     checksum: bool,
     arrow: Option<String>,
+    karyotype: bool,
 ) {
-    let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) =
-        extract_from_bam::extract(&bam, threads);
+    if karyotype {
+        let (lengths, tids, identities): (Vec<u64>, Vec<i32>, Vec<f32>) =
+            extract_from_bam::extract_with_chroms(&bam, threads);
+        generate_main_output(lengths, identities, bam.clone(), hist, checksum, arrow);
+        karyotype::make_karyotype(tids, bam);
+    } else {
+        let (lengths, identities): (Vec<u64>, Vec<f32>) = extract_from_bam::extract(&bam, threads);
+        generate_main_output(lengths, identities, bam, hist, checksum, arrow);
+    }
+}
+
+fn generate_main_output(
+    mut lengths: Vec<u64>,
+    mut identities: Vec<f32>,
+    bam: String,
+    hist: bool,
+    checksum: bool,
+    arrow: Option<String>,
+) {
     let num_reads = lengths.len();
     if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
@@ -131,5 +156,6 @@ fn extract() {
         true,
         true,
         Some("/home/wdecoster/temp/test.feather".to_string()),
+        true,
     )
 }

@@ -373,7 +373,7 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "cramino"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "arrow",
  "checksums",
@@ -385,6 +385,7 @@ dependencies = [
  "log",
  "rayon",
  "rust-htslib",
+ "unzip-n",
 ]
 
 [[package]]
@@ -1641,6 +1642,17 @@ name = "unicode-width"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"
+
+[[package]]
+name = "unzip-n"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2e7e85a0596447f0f2ac090e16bc4c516c6fe91771fb0c0ccf7fa3dae896b9c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "url"

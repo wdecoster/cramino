@@ -1,13 +1,8 @@
-//use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::htslib;
 use rust_htslib::{bam, bam::Read}; // for BAM_F*
 
 pub fn extract(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<f32>) {
-    // rayon::ThreadPoolBuilder::new()
-    //     .num_threads(threads)
-    //     .build()
-    //     .unwrap();
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
@@ -16,6 +11,19 @@ pub fn extract(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<f32>) {
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
         .map(|read| (read.seq_len() as u64, pid_from_cigar(read)))
         .unzip()
+}
+
+pub fn extract_with_chroms(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<i32>, Vec<f32>) {
+    use unzip_n::unzip_n;
+    unzip_n!(3);
+    let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
+    bam.set_threads(threads)
+        .expect("Failure setting decompression threads");
+    bam.rc_records()
+        .map(|r| r.expect("Failure parsing Bam file"))
+        .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .map(|read| (read.seq_len() as u64, read.tid(), pid_from_cigar(read)))
+        .unzip_n_vec()
 }
 
 /// Calculates the gap-compressed identity
