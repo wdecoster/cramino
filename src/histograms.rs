@@ -6,7 +6,7 @@ pub fn make_histogram_lengths(array: &[u64]) {
     for value in array.iter() {
         histogram.add(*value as f64);
     }
-    println!("\n\nHistogram for lengths\n{}", histogram);
+    println!("\n\n# Histogram for lengths\n{}", histogram);
 }
 
 pub fn make_histogram_identities(array: &[f32]) {
@@ -19,7 +19,7 @@ pub fn make_histogram_identities(array: &[f32]) {
     for value in array.iter() {
         histogram.add(f64::from(*value));
     }
-    println!("\n\nHistogram for identities\n{}", histogram);
+    println!("\n\n# Histogram for identities\n{}", histogram);
 }
 
 pub fn make_histogram_phaseblocks(array: &[i64]) {
@@ -27,5 +27,5 @@ pub fn make_histogram_phaseblocks(array: &[i64]) {
     for value in array.iter() {
         histogram.add(*value as f64);
     }
-    println!("\n\nHistogram for phaseblocks\n{}", histogram);
+    println!("\n\n# Histogram for phaseblocks\n{}", histogram);
 }
