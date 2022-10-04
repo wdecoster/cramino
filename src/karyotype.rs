@@ -20,15 +20,22 @@ pub fn make_karyotype(tids: &Vec<i32>, bamp: String) {
             norm_count.push((count as f32) / (chrom_length as f32));
         }
     }
-    let mean_count = average(&norm_count);
+    let median_count = median(norm_count.clone());
     let mut zipped = chroms.iter().zip(norm_count).collect::<Vec<_>>();
     zipped.sort_by_key(|&(&val, _)| val);
     println!("\n\n# Normalized read count per chromosome\n");
     for (chrom, count) in zipped {
-        println!("{}\t{:.2}", chrom, count / mean_count)
+        println!("{}\t{:.2}", chrom, count / median_count)
     }
 }
 
-fn average(numbers: &[f32]) -> f32 {
-    numbers.iter().sum::<f32>() as f32 / numbers.len() as f32
+pub fn median(mut array: Vec<f32>) -> f32 {
+    array.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    if (array.len() % 2) == 0 {
+        let ind_left = array.len() / 2 - 1;
+        let ind_right = array.len() / 2;
+        (array[ind_left] + array[ind_right]) as f32 / 2.0
+    } else {
+        array[(array.len() / 2)] as f32
+    }
 }
