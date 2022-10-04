@@ -25,7 +25,7 @@ pub fn make_karyotype(tids: &Vec<i32>, bamp: String) {
     zipped.sort_by_key(|&(&val, _)| val);
     println!("\n\n# Normalized read count per chromosome\n");
     for (chrom, count) in zipped {
-        println!("{}:\t{:.2}", chrom, count / mean_count)
+        println!("{}\t{:.2}", chrom, count / mean_count)
     }
 }
 
