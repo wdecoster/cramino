@@ -100,9 +100,6 @@ fn metrics_from_bam(
         println!("Checksum\t{}", bam.checksum());
     }
 
-    if karyotype {
-        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
-    }
     let phaseblocks = if phased {
         Some(phased::phase_metrics(
             metrics.tids.as_ref().unwrap(),
@@ -113,6 +110,9 @@ fn metrics_from_bam(
     } else {
         None
     };
+    if karyotype {
+        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
+    }
     if hist {
         histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
         histograms::make_histogram_identities(metrics.identities.as_ref().unwrap());
