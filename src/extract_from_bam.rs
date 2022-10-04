@@ -20,7 +20,7 @@ pub fn extract(bam_path: &String, threads: usize) -> Data {
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
-        .map(|read| (read.seq_len() as u64, pid_from_cigar(read)))
+        .map(|read| (read.seq_len() as u64, gap_compressed_identity(read)))
         .unzip();
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -44,7 +44,13 @@ pub fn extract_with_chroms(bam_path: &String, threads: usize) -> Data {
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
-        .map(|read| (read.seq_len() as u64, read.tid(), pid_from_cigar(read)))
+        .map(|read| {
+            (
+                read.seq_len() as u64,
+                read.tid(),
+                gap_compressed_identity(read),
+            )
+        })
         .unzip_n_vec();
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -75,7 +81,7 @@ pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
                 read.pos(),
                 read.reference_end(),
                 get_phaseset(&read),
-                pid_from_cigar(read),
+                gap_compressed_identity(read),
             )
         })
         .unzip_n_vec();
@@ -95,14 +101,14 @@ pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
 /// based on https://lh3.github.io/2018/11/25/on-the-definition-of-sequence-identity
 /// recent minimap2 version have that as the de tag
 /// if that is not present it is calculated from CIGAR and NM
-fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
-    match get_de_tag(&r) {
+fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
+    match get_de_tag(&record) {
         Some(v) => v,
         None => {
             let mut matches = 0;
             let mut gap_size = 0;
             let mut gap_count = 0;
-            for entry in r.cigar().iter() {
+            for entry in record.cigar().iter() {
                 match entry {
                     Cigar::Match(len) | Cigar::Equal(len) | Cigar::Diff(len) => {
                         matches += *len;
@@ -114,10 +120,7 @@ fn pid_from_cigar(r: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
                     _ => (),
                 }
             }
-            let pid = (get_nm_tag(&r) - gap_size + gap_count) as f32 / (matches + gap_count) as f32;
-            assert!(pid <= 100.0, "PID above 100.0 for {:?}", r);
-
-            pid
+            (get_nm_tag(&record) - gap_size + gap_count) as f32 / (matches + gap_count) as f32
         }
     }
 }
