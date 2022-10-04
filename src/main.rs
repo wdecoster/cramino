@@ -9,6 +9,7 @@ pub mod feather;
 pub mod file_info;
 pub mod histograms;
 pub mod karyotype;
+pub mod phased;
 
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
@@ -35,9 +36,13 @@ struct Cli {
     #[clap(long, value_parser)]
     arrow: Option<String>,
 
-    /// Collect data on reads per chromosome
+    /// Provide normalized number of reads per chromosome
     #[clap(long, value_parser)]
     karyotype: bool,
+
+    /// Calculate metrics for phased reads
+    #[clap(long, value_parser)]
+    phased: bool,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -61,6 +66,7 @@ fn main() {
         args.checksum,
         args.arrow,
         args.karyotype,
+        args.phased,
     );
     info!("Finished");
 }
@@ -72,68 +78,71 @@ fn metrics_from_bam(
     checksum: bool,
     arrow: Option<String>,
     karyotype: bool,
+    phased: bool,
 ) {
-    if karyotype {
-        let (lengths, tids, identities): (Vec<u64>, Vec<i32>, Vec<f32>) =
-            extract_from_bam::extract_with_chroms(&bam, threads);
-        generate_main_output(lengths, identities, bam.clone(), hist, checksum, arrow);
-        karyotype::make_karyotype(tids, bam);
-    } else {
-        let (lengths, identities): (Vec<u64>, Vec<f32>) = extract_from_bam::extract(&bam, threads);
-        generate_main_output(lengths, identities, bam, hist, checksum, arrow);
-    }
-}
+    let metrics = match (karyotype, phased) {
+        (false, false) => extract_from_bam::extract(&bam, threads),
+        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads),
+        (_, true) => extract_from_bam::extract_with_phase(&bam, threads),
+    };
 
-fn generate_main_output(
-    mut lengths: Vec<u64>,
-    mut identities: Vec<f32>,
-    bam: String,
-    hist: bool,
-    checksum: bool,
-    arrow: Option<String>,
-) {
-    let num_reads = lengths.len();
-    if num_reads < 2 {
-        error!("Not enough reads to calculate metrics!");
-        panic!();
-    }
-    lengths.sort_unstable();
-    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-    let data_yield: u64 = lengths.iter().sum::<u64>();
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
-    println!("Number of reads\t{num_reads}");
-    println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
-    println!("N50\t{}", calculations::get_n50(&lengths, data_yield));
-    println!(
-        "Median length\t{:.2}",
-        calculations::median_length(&lengths)
+
+    generate_main_output(
+        metrics.lengths.as_ref().unwrap(),
+        metrics.identities.as_ref().unwrap(),
     );
-    println!("Mean length\t{:.2}", data_yield / num_reads as u64);
-    println!("Median identity\t{:.2}", calculations::median(&identities));
-    println!(
-        "Mean identity\t{:.2}",
-        identities.iter().sum::<f32>() / num_reads as f32
-    );
+
     println!("Path\t{}", bam);
     println!("Creation time\t{}", bam.file_time());
     if checksum {
         println!("Checksum\t{}", bam.checksum());
     }
+
+    if karyotype {
+        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
+    }
+    let phaseblocks = if phased {
+        Some(phased::phase_metrics(
+            metrics.tids.as_ref().unwrap(),
+            metrics.starts.unwrap(),
+            metrics.ends.unwrap(),
+            metrics.phasesets.as_ref().unwrap(),
+        ))
+    } else {
+        None
+    };
     if hist {
-        println!(
-            "\n\nHistogram for lengths\n{}",
-            histograms::make_histogram_lengths(&lengths)
-        );
-        println!(
-            "\n\nHistogram for identities\n{}",
-            histograms::make_histogram_identities(&identities)
-        );
+        histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
+        histograms::make_histogram_identities(metrics.identities.as_ref().unwrap());
+        if phased {
+            histograms::make_histogram_phaseblocks(&phaseblocks.unwrap())
+        }
     }
     match arrow {
         None => (),
-        Some(s) => feather::save_as_arrow(s, lengths, identities),
+        Some(s) => feather::save_as_arrow(s, metrics.lengths.unwrap(), metrics.identities.unwrap()),
     }
+}
+
+fn generate_main_output(lengths: &Vec<u64>, identities: &[f32]) {
+    let num_reads = lengths.len();
+    if num_reads < 2 {
+        error!("Not enough reads to calculate metrics!");
+        panic!();
+    }
+    let data_yield: u64 = lengths.iter().sum::<u64>();
+    println!("Number of reads\t{num_reads}");
+    println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
+    println!("N50\t{}", calculations::get_n50(lengths, data_yield));
+    println!("Median length\t{:.2}", calculations::median_length(lengths));
+    println!("Mean length\t{:.2}", data_yield / num_reads as u64);
+    println!("Median identity\t{:.2}", calculations::median(identities));
+    println!(
+        "Mean identity\t{:.2}",
+        identities.iter().sum::<f32>() / num_reads as f32
+    );
 }
 
 #[cfg(test)]
@@ -156,6 +165,7 @@ fn extract() {
         true,
         true,
         Some("/home/wdecoster/temp/test.feather".to_string()),
+        true,
         true,
     )
 }

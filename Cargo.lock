@@ -373,7 +373,7 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "cramino"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "arrow",
  "checksums",
@@ -382,6 +382,7 @@ dependencies = [
  "ctor",
  "env_logger",
  "histo_fp",
+ "itertools",
  "log",
  "rayon",
  "rust-htslib",
@@ -778,6 +779,15 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
+]
+
+[[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
 ]
 
 [[package]]
