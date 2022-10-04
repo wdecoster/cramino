@@ -1,29 +1,94 @@
+use bam::ext::BamRecordExtensions;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::htslib;
 use rust_htslib::{bam, bam::Read}; // for BAM_F*
 
-pub fn extract(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<f32>) {
+pub struct Data {
+    pub lengths: Option<Vec<u64>>,
+    pub identities: Option<Vec<f32>>,
+    pub tids: Option<Vec<i32>>,
+    pub starts: Option<Vec<i64>>,
+    pub ends: Option<Vec<i64>>,
+    pub phasesets: Option<Vec<Option<u32>>>,
+}
+
+pub fn extract(bam_path: &String, threads: usize) -> Data {
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    bam.rc_records()
+    let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) = bam
+        .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
         .map(|read| (read.seq_len() as u64, pid_from_cigar(read)))
-        .unzip()
+        .unzip();
+    lengths.sort_unstable();
+    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    Data {
+        lengths: Some(lengths),
+        identities: Some(identities),
+        tids: None,
+        starts: None,
+        ends: None,
+        phasesets: None,
+    }
 }
 
-pub fn extract_with_chroms(bam_path: &String, threads: usize) -> (Vec<u64>, Vec<i32>, Vec<f32>) {
+pub fn extract_with_chroms(bam_path: &String, threads: usize) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(3);
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    bam.rc_records()
+    let (mut lengths, tids, mut identities) = bam
+        .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
         .map(|read| (read.seq_len() as u64, read.tid(), pid_from_cigar(read)))
-        .unzip_n_vec()
+        .unzip_n_vec();
+    lengths.sort_unstable();
+    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    Data {
+        lengths: Some(lengths),
+        identities: Some(identities),
+        tids: Some(tids),
+        starts: None,
+        ends: None,
+        phasesets: None,
+    }
+}
+
+pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
+    use unzip_n::unzip_n;
+    unzip_n!(6);
+    let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
+    bam.set_threads(threads)
+        .expect("Failure setting decompression threads");
+    let (mut lengths, tids, starts, ends, phasesets, mut identities) = bam
+        .rc_records()
+        .map(|r| r.expect("Failure parsing Bam file"))
+        .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .map(|read| {
+            (
+                read.seq_len() as u64,
+                read.tid(),
+                read.pos(),
+                read.reference_end(),
+                get_phaseset(&read),
+                pid_from_cigar(read),
+            )
+        })
+        .unzip_n_vec();
+    lengths.sort_unstable();
+    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    Data {
+        lengths: Some(lengths),
+        identities: Some(identities),
+        tids: Some(tids),
+        starts: Some(starts),
+        ends: Some(ends),
+        phasesets: Some(phasesets),
+    }
 }
 
 /// Calculates the gap-compressed identity
@@ -76,6 +141,18 @@ fn get_de_tag(record: &bam::Record) -> Option<f32> {
     match record.aux(b"de") {
         Ok(value) => match value {
             Aux::Float(v) => Some(100.0 * (1.0 - v)),
+            _ => panic!("Unexpected type of Aux {:?}", value),
+        },
+        Err(_e) => None,
+    }
+}
+
+fn get_phaseset(record: &bam::Record) -> Option<u32> {
+    match record.aux(b"PS") {
+        Ok(value) => match value {
+            Aux::U8(v) => Some(u32::from(v)),
+            Aux::U16(v) => Some(u32::from(v)),
+            Aux::U32(v) => Some(v),
             _ => panic!("Unexpected type of Aux {:?}", value),
         },
         Err(_e) => None,
