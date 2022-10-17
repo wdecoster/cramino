@@ -10,6 +10,7 @@ pub mod file_info;
 pub mod histograms;
 pub mod karyotype;
 pub mod phased;
+pub mod utils;
 
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
@@ -89,9 +90,12 @@ fn metrics_from_bam(
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
 
+    let genome_size = utils::get_genome_size(&bam.path);
+
     generate_main_output(
         metrics.lengths.as_ref().unwrap(),
         metrics.identities.as_ref().unwrap(),
+        genome_size
     );
 
     println!("Path\t{}", bam);
@@ -126,7 +130,7 @@ fn metrics_from_bam(
     }
 }
 
-fn generate_main_output(lengths: &Vec<u64>, identities: &[f32]) {
+fn generate_main_output(lengths: &Vec<u64>, identities: &[f32], genome_size: u64) {
     let num_reads = lengths.len();
     if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
@@ -135,6 +139,7 @@ fn generate_main_output(lengths: &Vec<u64>, identities: &[f32]) {
     let data_yield: u64 = lengths.iter().sum::<u64>();
     println!("Number of reads\t{num_reads}");
     println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
+    println!("Mean coverage\t{:.2}", data_yield as f64 / genome_size as f64);
     println!("N50\t{}", calculations::get_n50(lengths, data_yield));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
     println!("Mean length\t{:.2}", data_yield / num_reads as u64);
