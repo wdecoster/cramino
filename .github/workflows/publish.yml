@@ -13,7 +13,7 @@ jobs:
       matrix:
         name: [
             linux,
-            windows,
+#            windows,
             macos
         ]
 
@@ -22,10 +22,10 @@ jobs:
             os: ubuntu-latest
             artifact_name: target/release/<name>
             asset_name: <name>-linux
-          - name: windows
-            os: windows-latest
-            artifact_name: target/release/<name>.exe
-            asset_name: <name>-windows
+#          - name: windows
+#            os: windows-latest
+#            artifact_name: target/release/<name>.exe
+#            asset_name: <name>-windows
           - name: macos
             os: macos-latest
             artifact_name: target/release/<name>
