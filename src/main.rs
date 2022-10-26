@@ -95,7 +95,7 @@ fn metrics_from_bam(
     generate_main_output(
         metrics.lengths.as_ref().unwrap(),
         metrics.identities.as_ref().unwrap(),
-        genome_size
+        genome_size,
     );
 
     println!("Path\t{}", bam);
@@ -139,7 +139,10 @@ fn generate_main_output(lengths: &Vec<u64>, identities: &[f32], genome_size: u64
     let data_yield: u64 = lengths.iter().sum::<u64>();
     println!("Number of reads\t{num_reads}");
     println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
-    println!("Mean coverage\t{:.2}", data_yield as f64 / genome_size as f64);
+    println!(
+        "Mean coverage\t{:.2}",
+        data_yield as f64 / genome_size as f64
+    );
     println!("N50\t{}", calculations::get_n50(lengths, data_yield));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
     println!("Mean length\t{:.2}", data_yield / num_reads as u64);

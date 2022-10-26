@@ -46,7 +46,7 @@ A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory. Note th
 ### Optional output
 
 * a checksum to check if files were updated/changed or corrupted. (`--checksum`)
-* an arrow file for use within [NanoPlot](https://github.com/wdecoster/NanoPlot) and [NanoComp](https://github.com/wdecoster/nanocomp)
+* an arrow file for use within [NanoPlot](https://github.com/wdecoster/NanoPlot) and [NanoComp](https://github.com/wdecoster/nanocomp) (`--arrow <filename>`)
 * calculating a normalised number of reads per chromosome, e.g. to determine the sex or aneuploidies (`--karyotype`)
 * histograms of read lengths and read identities, as below. (`--hist`)
 
