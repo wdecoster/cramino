@@ -4,11 +4,9 @@ A tool for quick quality assessment of cram and bam files, intended for long rea
 
 ## Installation
 
-### Download binaries from [releases](https://github.com/wdecoster/cramino/releases)
+Download binaries from [releases](https://github.com/wdecoster/cramino/releases).
 
-### With cargo
-
-`cargo install cramino`
+Or build with cargo: `cargo install cramino`
 
 ## Usage
 
