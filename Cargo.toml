@@ -15,7 +15,7 @@ categories = ["bioinformatics"]
 
 [dependencies]
 clap = { version = "3.2.6", features = ["derive"] }
-rust-htslib = "*"
+rust-htslib = "0.39.5"
 log = "0.4.0"
 env_logger = "0.8.4"
 checksums = "0.9.1"
