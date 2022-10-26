@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -9,7 +9,7 @@ readme = "README.md"
 homepage = "https://github.com/wdecoster/cramino"
 repository = "https://github.com/wdecoster/cramino"
 keywords = ["ont", "pacbio", "cram", "bam", "alignment"]
-categories = ["bioinformatics"]
+categories = ["command-line-utilities", "science"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
