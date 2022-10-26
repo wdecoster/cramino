@@ -2,6 +2,14 @@
 
 A tool for quick quality assessment of cram and bam files, intended for long read sequencing.
 
+## Installation
+
+### Download binaries from [releases](https://github.com/wdecoster/cramino/releases)
+
+### With cargo
+
+`cargo install cramino`
+
 ## Usage
 
 ```bash
