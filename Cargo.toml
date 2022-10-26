@@ -8,7 +8,7 @@ description = "A tool to quickly extract quality metrics from bam or cram files"
 readme = "README.md"
 homepage = "https://github.com/wdecoster/cramino"
 repository = "https://github.com/wdecoster/cramino"
-keywords = ["ont", "long read", "pacbio", "cram", "bam", "alignment"]
+keywords = ["ont", "pacbio", "cram", "bam", "alignment"]
 categories = ["bioinformatics"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
