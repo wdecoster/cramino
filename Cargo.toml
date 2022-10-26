@@ -27,4 +27,4 @@ unzip-n = "0.1.2"
 itertools = "0.10.5"
 
 [dev-dependencies]
-ctor = "*"
+ctor = "0.1.26"
