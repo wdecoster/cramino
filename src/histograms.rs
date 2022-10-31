@@ -9,7 +9,7 @@ pub fn make_histogram_lengths(array: &[u64]) {
     println!("\n\n# Histogram for lengths\n{}", histogram);
 }
 
-pub fn make_histogram_identities(array: &[f32]) {
+pub fn make_histogram_identities(array: &[f64]) {
     let bins = 100.0
         - array
             .iter()
@@ -17,7 +17,7 @@ pub fn make_histogram_identities(array: &[f32]) {
             .unwrap();
     let mut histogram = Histogram::with_buckets(bins as u64, None);
     for value in array.iter() {
-        histogram.add(f64::from(*value));
+        histogram.add(*value);
     }
     println!("\n\n# Histogram for identities\n{}", histogram);
 }

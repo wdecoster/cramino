@@ -4,20 +4,20 @@ use std::sync::Arc;
 
 use arrow::{
     self,
-    array::{Float32Array, UInt64Array},
+    array::{Float64Array, UInt64Array},
     ipc::writer::FileWriter,
     record_batch::RecordBatch,
 };
 
-pub fn save_as_arrow(filename: String, lengths: Vec<u64>, identities: Vec<f32>) {
-    let identities_array = Arc::new(Float32Array::from(identities)) as _;
+pub fn save_as_arrow(filename: String, lengths: Vec<u64>, identities: Vec<f64>) {
+    let identities_array = Arc::new(Float64Array::from(identities)) as _;
     let lengths_array = Arc::new(UInt64Array::from(lengths)) as _;
     let batch =
         RecordBatch::try_from_iter([("identities", identities_array), ("lengths", lengths_array)])
             .unwrap();
 
     let schema = Schema::new(vec![
-        Field::new("identities", DataType::Float32, false),
+        Field::new("identities", DataType::Float64, false),
         Field::new("lengths", DataType::UInt64, false),
     ]);
     let buffer = File::create(filename).expect("create file error");

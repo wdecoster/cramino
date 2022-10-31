@@ -1,11 +1,10 @@
 use bam::ext::BamRecordExtensions;
 use rust_htslib::bam::record::{Aux, Cigar};
-use rust_htslib::htslib;
-use rust_htslib::{bam, bam::Read}; // for BAM_F*
+use rust_htslib::{bam, bam::Read, htslib};
 
 pub struct Data {
     pub lengths: Option<Vec<u64>>,
-    pub identities: Option<Vec<f32>>,
+    pub identities: Option<Vec<f64>>,
     pub tids: Option<Vec<i32>>,
     pub starts: Option<Vec<i64>>,
     pub ends: Option<Vec<i64>>,
@@ -16,7 +15,7 @@ pub fn extract(bam_path: &String, threads: usize) -> Data {
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    let (mut lengths, mut identities): (Vec<u64>, Vec<f32>) = bam
+    let (mut lengths, mut identities): (Vec<u64>, Vec<f64>) = bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
@@ -101,9 +100,9 @@ pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
 /// based on https://lh3.github.io/2018/11/25/on-the-definition-of-sequence-identity
 /// recent minimap2 version have that as the de tag
 /// if that is not present it is calculated from CIGAR and NM
-fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f32 {
+fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f64 {
     match get_de_tag(&record) {
-        Some(v) => v,
+        Some(v) => v as f64,
         None => {
             let mut matches = 0;
             let mut gap_size = 0;
@@ -120,7 +119,7 @@ fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f32
                     _ => (),
                 }
             }
-            (get_nm_tag(&record) - gap_size + gap_count) as f32 / (matches + gap_count) as f32
+            (get_nm_tag(&record) - gap_size + gap_count) as f64 / (matches + gap_count) as f64
         }
     }
 }

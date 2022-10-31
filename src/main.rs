@@ -130,7 +130,7 @@ fn metrics_from_bam(
     }
 }
 
-fn generate_main_output(lengths: &Vec<u64>, identities: &[f32], genome_size: u64) {
+fn generate_main_output(lengths: &Vec<u64>, identities: &[f64], genome_size: u64) {
     let num_reads = lengths.len();
     if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
@@ -149,7 +149,7 @@ fn generate_main_output(lengths: &Vec<u64>, identities: &[f32], genome_size: u64
     println!("Median identity\t{:.2}", calculations::median(identities));
     println!(
         "Mean identity\t{:.2}",
-        identities.iter().sum::<f32>() / num_reads as f32
+        identities.iter().sum::<f64>() / (num_reads as f64)
     );
 }
 
