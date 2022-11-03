@@ -168,7 +168,7 @@ fn verify_app() {
 #[test]
 fn extract() {
     metrics_from_bam(
-        "/home/wdecoster/test-data/test.bam".to_string(),
+        "test-data/small-test-phased.bam".to_string(),
         8,
         true,
         true,

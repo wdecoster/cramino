@@ -1,4 +1,5 @@
 use itertools::izip;
+use log::error;
 
 pub fn phase_metrics(
     tids: &[i32],
@@ -13,6 +14,10 @@ pub fn phase_metrics(
     phased_reads.sort_unstable();
 
     let num_phased_reads = phased_reads.len();
+    if num_phased_reads == 0 {
+        error!("Not a single phased read found!");
+        return vec![];
+    }
 
     let mut phased_reads_iter = phased_reads.into_iter();
     let (mut chrom1, mut start1, mut block_end, mut phaseset1) = phased_reads_iter.next().unwrap();
