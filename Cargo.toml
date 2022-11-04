@@ -22,7 +22,7 @@ checksums = "0.9.1"
 chrono = "0.4.22"
 rayon = "1.5.3"
 histo_fp = "0.2.1"
-arrow = "22.0.0"
+arrow = "26.0.0"
 unzip-n = "0.1.2"
 itertools = "0.10.5"
 
