@@ -11,7 +11,7 @@ pub struct Data {
     pub phasesets: Option<Vec<Option<u32>>>,
 }
 
-pub fn extract(bam_path: &String, threads: usize) -> Data {
+pub fn extract(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
@@ -19,6 +19,7 @@ pub fn extract(bam_path: &String, threads: usize) -> Data {
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .filter(|read| read.seq_len() > min_read_len)
         .map(|read| (read.seq_len() as u64, gap_compressed_identity(read)))
         .unzip();
     lengths.sort_unstable();
@@ -33,7 +34,7 @@ pub fn extract(bam_path: &String, threads: usize) -> Data {
     }
 }
 
-pub fn extract_with_chroms(bam_path: &String, threads: usize) -> Data {
+pub fn extract_with_chroms(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(3);
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
@@ -43,6 +44,7 @@ pub fn extract_with_chroms(bam_path: &String, threads: usize) -> Data {
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .filter(|read| read.seq_len() > min_read_len)
         .map(|read| {
             (
                 read.seq_len() as u64,
@@ -63,7 +65,7 @@ pub fn extract_with_chroms(bam_path: &String, threads: usize) -> Data {
     }
 }
 
-pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
+pub fn extract_with_phase(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(6);
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
@@ -73,6 +75,7 @@ pub fn extract_with_phase(bam_path: &String, threads: usize) -> Data {
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+        .filter(|read| read.seq_len() > min_read_len)
         .map(|read| {
             (
                 read.seq_len() as u64,
