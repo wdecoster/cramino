@@ -25,6 +25,10 @@ struct Cli {
     #[clap(short, long, value_parser, default_value_t = 4)]
     threads: usize,
 
+    /// Minimal length of read to be considered
+    #[clap(short, long, value_parser, default_value_t = 0)]
+    min_read_len: usize,
+
     /// If histograms have to be generated
     #[clap(long, value_parser)]
     hist: bool,
@@ -63,6 +67,7 @@ fn main() {
     metrics_from_bam(
         args.input,
         args.threads,
+        args.min_read_len,
         args.hist,
         args.checksum,
         args.arrow,
@@ -75,6 +80,7 @@ fn main() {
 fn metrics_from_bam(
     bam: String,
     threads: usize,
+    min_read_len: usize,
     hist: bool,
     checksum: bool,
     arrow: Option<String>,
@@ -82,9 +88,9 @@ fn metrics_from_bam(
     phased: bool,
 ) {
     let metrics = match (karyotype, phased) {
-        (false, false) => extract_from_bam::extract(&bam, threads),
-        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads),
-        (_, true) => extract_from_bam::extract_with_phase(&bam, threads),
+        (false, false) => extract_from_bam::extract(&bam, threads, min_read_len),
+        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads, min_read_len),
+        (_, true) => extract_from_bam::extract_with_phase(&bam, threads, min_read_len),
     };
 
     let bam = file_info::BamFile { path: bam };
@@ -170,6 +176,7 @@ fn extract() {
     metrics_from_bam(
         "test-data/small-test-phased.bam".to_string(),
         8,
+        0,
         true,
         true,
         Some("/home/wdecoster/temp/test.feather".to_string()),
