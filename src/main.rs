@@ -88,9 +88,9 @@ fn metrics_from_bam(
     phased: bool,
 ) {
     let metrics = match (karyotype, phased) {
-        (false, false) => extract_from_bam::extract(&bam, threads, min_read_len),
-        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads, min_read_len),
-        (_, true) => extract_from_bam::extract_with_phase(&bam, threads, min_read_len),
+        (false, false) => extract_from_bam::extract(&bam, threads, min_read_len, arrow),
+        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads, min_read_len, arrow),
+        (_, true) => extract_from_bam::extract_with_phase(&bam, threads, min_read_len, arrow),
     };
 
     let bam = file_info::BamFile { path: bam };
@@ -129,10 +129,6 @@ fn metrics_from_bam(
         if phased {
             histograms::make_histogram_phaseblocks(&phaseblocks.unwrap())
         }
-    }
-    match arrow {
-        None => (),
-        Some(s) => feather::save_as_arrow(s, metrics.lengths.unwrap(), metrics.identities.unwrap()),
     }
 }
 

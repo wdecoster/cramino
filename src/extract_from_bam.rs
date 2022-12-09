@@ -11,7 +11,12 @@ pub struct Data {
     pub phasesets: Option<Vec<Option<u32>>>,
 }
 
-pub fn extract(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
+pub fn extract(
+    bam_path: &String,
+    threads: usize,
+    min_read_len: usize,
+    arrow: Option<String>,
+) -> Data {
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
@@ -22,6 +27,10 @@ pub fn extract(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
         .filter(|read| read.seq_len() > min_read_len)
         .map(|read| (read.seq_len() as u64, gap_compressed_identity(read)))
         .unzip();
+    match arrow {
+        None => (),
+        Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
+    }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     Data {
@@ -34,7 +43,12 @@ pub fn extract(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
     }
 }
 
-pub fn extract_with_chroms(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
+pub fn extract_with_chroms(
+    bam_path: &String,
+    threads: usize,
+    min_read_len: usize,
+    arrow: Option<String>,
+) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(3);
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
@@ -53,6 +67,10 @@ pub fn extract_with_chroms(bam_path: &String, threads: usize, min_read_len: usiz
             )
         })
         .unzip_n_vec();
+    match arrow {
+        None => (),
+        Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
+    }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     Data {
@@ -65,7 +83,12 @@ pub fn extract_with_chroms(bam_path: &String, threads: usize, min_read_len: usiz
     }
 }
 
-pub fn extract_with_phase(bam_path: &String, threads: usize, min_read_len: usize) -> Data {
+pub fn extract_with_phase(
+    bam_path: &String,
+    threads: usize,
+    min_read_len: usize,
+    arrow: Option<String>,
+) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(6);
     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
@@ -87,6 +110,10 @@ pub fn extract_with_phase(bam_path: &String, threads: usize, min_read_len: usize
             )
         })
         .unzip_n_vec();
+    match arrow {
+        None => (),
+        Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
+    }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     Data {
