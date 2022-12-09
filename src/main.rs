@@ -175,7 +175,7 @@ fn extract() {
         0,
         true,
         true,
-        Some("/home/wdecoster/temp/test.feather".to_string()),
+        Some("test.feather".to_string()),
         true,
         true,
     )
