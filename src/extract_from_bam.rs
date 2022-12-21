@@ -149,7 +149,8 @@ fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f64
                     _ => (),
                 }
             }
-            (get_nm_tag(&record) - gap_size + gap_count) as f64 / (matches + gap_count) as f64
+            1.0 - ((get_nm_tag(&record) - gap_size + gap_count) as f64
+                / (matches + gap_count) as f64)
         }
     }
 }
