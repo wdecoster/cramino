@@ -28,3 +28,6 @@ itertools = "0.10.5"
 
 [dev-dependencies]
 ctor = "0.1.26"
+
+[target.x86_64-apple-darwin]
+rustflags=["-C", "link-arg=-mmacosx-version-min=10.12"]
