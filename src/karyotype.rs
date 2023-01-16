@@ -34,8 +34,8 @@ pub fn median(mut array: Vec<f32>) -> f32 {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
-        (array[ind_left] + array[ind_right]) as f32 / 2.0
+        (array[ind_left] + array[ind_right]) / 2.0
     } else {
-        array[(array.len() / 2)] as f32
+        array[(array.len() / 2)]
     }
 }

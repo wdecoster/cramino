@@ -65,7 +65,7 @@ fn get_n50(lengths: &Vec<i64>, nb_bases_total: i64) -> i64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
-        if acc as i64 > nb_bases_total / 2 {
+        if acc > nb_bases_total / 2 {
             return *val;
         }
     }
