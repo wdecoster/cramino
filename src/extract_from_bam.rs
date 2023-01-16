@@ -11,6 +11,54 @@ pub struct Data {
     pub phasesets: Option<Vec<Option<u32>>>,
 }
 
+// pub fn extract_unified(
+//     bam_path: &String,
+//     threads: usize,
+//     min_read_len: usize,
+//     arrow: Option<String>,
+//     chroms: bool,
+//     phase: bool,
+// ) -> Data {
+//     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
+//     bam.set_threads(threads)
+//         .expect("Failure setting decompression threads");
+//     use unzip_n::unzip_n;
+//     unzip_n!(6);
+//     let mut bam = bam::Reader::from_path(&bam_path).expect("Error opening BAM.\n");
+//     bam.set_threads(threads)
+//         .expect("Failure setting decompression threads");
+//     let (mut lengths, tids, starts, ends, phasesets, mut identities) = bam
+//         .rc_records()
+//         .map(|r| r.expect("Failure parsing Bam file"))
+//         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
+//         .filter(|read| read.seq_len() > min_read_len)
+//         .map(|read| {
+//             (
+//                 read.seq_len() as u64,
+//                 if chroms { Some(read.tid()) } else { None },
+//                 if phase { Some(read.pos()) } else { None },
+//                 read.reference_end(),
+//                 get_phaseset(&read),
+//                 gap_compressed_identity(read),
+//             )
+//         })
+//         .unzip_n_vec();
+//     match arrow {
+//         None => (),
+//         Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
+//     }
+//     lengths.sort_unstable();
+//     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+//     Data {
+//         lengths: Some(lengths),
+//         identities: Some(identities),
+//         tids: Some(tids),
+//         starts: Some(starts),
+//         ends: Some(ends),
+//         phasesets: Some(phasesets),
+//     }
+// }
+
 pub fn extract(
     bam_path: &String,
     threads: usize,
