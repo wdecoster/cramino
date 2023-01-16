@@ -4,9 +4,14 @@ A tool for quick quality assessment of cram and bam files, intended for long rea
 
 ## Installation
 
-Download binaries from [releases](https://github.com/wdecoster/cramino/releases).
+Preferably, for most users, download a ready-to-use binary for your system to add directory on your $PATH from the [releases](https://github.com/wdecoster/cramino/releases).  
+You may have to change the file permissions to execute it with `chmod +x cramino`
 
-Or build with cargo: `cargo install cramino`
+Alternatively, use conda to install  
+`conda install -c bioconda cramino`
+
+Or for Rust developers, build cramino with cargo:  
+`cargo install cramino`
 
 ## Usage
 
