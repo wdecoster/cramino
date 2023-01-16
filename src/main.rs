@@ -87,12 +87,7 @@ fn metrics_from_bam(
     karyotype: bool,
     phased: bool,
 ) {
-    let metrics = match (karyotype, phased) {
-        (false, false) => extract_from_bam::extract(&bam, threads, min_read_len, arrow),
-        (true, false) => extract_from_bam::extract_with_chroms(&bam, threads, min_read_len, arrow),
-        (_, true) => extract_from_bam::extract_with_phase(&bam, threads, min_read_len, arrow),
-    };
-
+    let metrics = extract_from_bam::extract(&bam, threads, min_read_len, arrow, karyotype, phased);
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
 
