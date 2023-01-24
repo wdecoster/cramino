@@ -19,40 +19,33 @@ pub fn extract(
     chroms: bool,
     phase: bool,
 ) -> Data {
-    use unzip_n::unzip_n;
-    unzip_n!(6);
+    let mut lengths = vec![];
+    let mut identities = vec![];
+    let mut tids = vec![];
+    let mut starts = vec![];
+    let mut ends = vec![];
+    let mut phasesets = vec![];
     let mut bam = bam::Reader::from_path(bam_path)
         .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    let (mut lengths, tids, starts, ends, phasesets, mut identities) = bam
+    for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
         .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
         .filter(|read| read.seq_len() > min_read_len)
-        .map(|read| {
-            (
-                read.seq_len() as u64,
-                if chroms || phase {
-                    Some(read.tid())
-                } else {
-                    None
-                },
-                if phase { Some(read.pos()) } else { None },
-                if phase {
-                    Some(read.reference_end())
-                } else {
-                    None
-                },
-                if phase {
-                    Some(get_phaseset(&read))
-                } else {
-                    None
-                },
-                gap_compressed_identity(read),
-            )
-        })
-        .unzip_n_vec();
+    {
+        lengths.push(read.seq_len() as u64);
+        if chroms || phase {
+            tids.push(read.tid());
+        }
+        if phase {
+            starts.push(read.pos());
+            ends.push(read.reference_end());
+            phasesets.push(get_phaseset(&read));
+        }
+        identities.push(gap_compressed_identity(read));
+    }
     match arrow {
         None => (),
         Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
@@ -62,26 +55,10 @@ pub fn extract(
     Data {
         lengths: Some(lengths),
         identities: Some(identities),
-        tids: if chroms || phase {
-            Some(tids.into_iter().flatten().collect())
-        } else {
-            None
-        },
-        starts: if phase {
-            Some(starts.into_iter().flatten().collect())
-        } else {
-            None
-        },
-        ends: if phase {
-            Some(ends.into_iter().flatten().collect())
-        } else {
-            None
-        },
-        phasesets: if phase {
-            Some(phasesets.into_iter().flatten().collect())
-        } else {
-            None
-        },
+        tids: if chroms || phase { Some(tids) } else { None },
+        starts: if phase { Some(starts) } else { None },
+        ends: if phase { Some(ends) } else { None },
+        phasesets: if phase { Some(phasesets) } else { None },
     }
 }
 
