@@ -21,7 +21,8 @@ pub fn extract(
 ) -> Data {
     use unzip_n::unzip_n;
     unzip_n!(6);
-    let mut bam = bam::Reader::from_path(bam_path).expect("Error opening BAM.\n");
+    let mut bam = bam::Reader::from_path(bam_path)
+        .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n");
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
     let (mut lengths, tids, starts, ends, phasesets, mut identities) = bam
