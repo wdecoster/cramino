@@ -2,7 +2,7 @@ pub fn get_n50(lengths: &Vec<u64>, nb_bases_total: u64) -> u64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
-        if acc as u64 > nb_bases_total / 2 {
+        if acc > nb_bases_total / 2 {
             return *val;
         }
     }
