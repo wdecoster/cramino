@@ -15,11 +15,11 @@ Or for Rust developers, build cramino with cargo:
 
 ## Usage
 
-```bash
+```text
 cramino [OPTIONS] <INPUT>
 
 ARGS:
-    <INPUT>    cram or bam file to check
+    <INPUT>    cram or bam file to check (or - to read from stdin)
 
 OPTIONS:
     -t, --threads <THREADS>            Number of parallel decompression threads to use [default: 4]

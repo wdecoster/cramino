@@ -28,8 +28,12 @@ pub fn extract(
     let mut ends = vec![];
     let mut phasesets = vec![];
     let mut exons = vec![];
-    let mut bam = bam::Reader::from_path(bam_path)
-        .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n");
+    let mut bam = if bam_path == "-" {
+        bam::Reader::from_stdin().expect("\n\nError reading alignments from stdin.\nDid you include the file header with -h?\n\n\n\n")
+    } else {
+        bam::Reader::from_path(bam_path)
+            .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
+    };
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
     for read in bam
