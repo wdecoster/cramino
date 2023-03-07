@@ -29,8 +29,9 @@ OPTIONS:
     --arrow <ARROW>                    Write data to a feather format
     --karyotype                        Provide normalized number of reads per chromosome
     --phased                           Calculate metrics for phased reads
-    -h, --help                 Print help information
-    -V, --version              Print version information
+    --spliced                          Calculate metrics for spliced reads
+    -h, --help                         Print help information
+    -V, --version                      Print version information
 ```
 
 ## Example output
