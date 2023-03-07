@@ -444,7 +444,7 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "cramino"
-version = "0.9.8"
+version = "0.9.9"
 dependencies = [
  "arrow",
  "checksums",

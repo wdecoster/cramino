@@ -9,6 +9,7 @@ pub struct Data {
     pub starts: Option<Vec<i64>>,
     pub ends: Option<Vec<i64>>,
     pub phasesets: Option<Vec<Option<u32>>>,
+    pub exons: Option<Vec<usize>>,
 }
 
 pub fn extract(
@@ -18,6 +19,7 @@ pub fn extract(
     arrow: Option<String>,
     chroms: bool,
     phase: bool,
+    spliced: bool,
 ) -> Data {
     let mut lengths = vec![];
     let mut identities = vec![];
@@ -25,8 +27,13 @@ pub fn extract(
     let mut starts = vec![];
     let mut ends = vec![];
     let mut phasesets = vec![];
-    let mut bam = bam::Reader::from_path(bam_path)
-        .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n");
+    let mut exons = vec![];
+    let mut bam = if bam_path == "-" {
+        bam::Reader::from_stdin().expect("\n\nError reading alignments from stdin.\nDid you include the file header with -h?\n\n\n\n")
+    } else {
+        bam::Reader::from_path(bam_path)
+            .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
+    };
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
     for read in bam
@@ -44,6 +51,9 @@ pub fn extract(
             ends.push(read.reference_end());
             phasesets.push(get_phaseset(&read));
         }
+        if spliced {
+            exons.push(get_exon_number(&read));
+        }
         identities.push(gap_compressed_identity(read));
     }
     match arrow {
@@ -59,6 +69,7 @@ pub fn extract(
         starts: if phase { Some(starts) } else { None },
         ends: if phase { Some(ends) } else { None },
         phasesets: if phase { Some(phasesets) } else { None },
+        exons: if spliced { Some(exons) } else { None },
     }
 }
 
@@ -126,4 +137,16 @@ fn get_phaseset(record: &bam::Record) -> Option<u32> {
         },
         Err(_e) => None,
     }
+}
+
+fn get_exon_number(record: &bam::Record) -> usize {
+    let mut exon_count = 1;
+
+    for op in record.cigar().iter() {
+        if let Cigar::RefSkip(_len) = op {
+            exon_count += 1;
+        }
+    }
+
+    exon_count
 }

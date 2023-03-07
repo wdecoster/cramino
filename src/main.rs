@@ -10,6 +10,7 @@ pub mod file_info;
 pub mod histograms;
 pub mod karyotype;
 pub mod phased;
+pub mod splicing;
 pub mod utils;
 
 // The arguments end up in the Cli struct
@@ -48,6 +49,10 @@ struct Cli {
     /// Calculate metrics for phased reads
     #[clap(long, value_parser)]
     phased: bool,
+
+    /// Provide metrics for spliced data
+    #[clap(long, value_parser)]
+    spliced: bool,
 }
 
 fn is_file(pathname: &str) -> Result<(), String> {
@@ -73,6 +78,7 @@ fn main() {
         args.arrow,
         args.karyotype,
         args.phased,
+        args.spliced,
     );
     info!("Finished");
 }
@@ -86,8 +92,17 @@ fn metrics_from_bam(
     arrow: Option<String>,
     karyotype: bool,
     phased: bool,
+    spliced: bool,
 ) {
-    let metrics = extract_from_bam::extract(&bam, threads, min_read_len, arrow, karyotype, phased);
+    let metrics = extract_from_bam::extract(
+        &bam,
+        threads,
+        min_read_len,
+        arrow,
+        karyotype,
+        phased,
+        spliced,
+    );
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
 
@@ -117,6 +132,9 @@ fn metrics_from_bam(
     };
     if karyotype {
         karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
+    }
+    if spliced {
+        splicing::splice_metrics(metrics.exons.unwrap());
     }
     if hist {
         histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
@@ -171,6 +189,7 @@ fn extract() {
         true,
         true,
         Some("test.feather".to_string()),
+        true,
         true,
         true,
     )
