@@ -27,8 +27,8 @@ struct Cli {
     threads: usize,
 
     /// reference for decompressing bam/cram
-    #[clap(long, default_value = "")]
-    reference: String,
+    #[clap(long, value_parser)]
+    reference: Option<String>,
 
     /// Minimal length of read to be considered
     #[clap(short, long, value_parser, default_value_t = 0)]
@@ -91,7 +91,7 @@ fn main() {
 fn metrics_from_bam(
     bam: String,
     threads: usize,
-    reference: String,
+    reference: Option<String>,
     min_read_len: usize,
     hist: bool,
     checksum: bool,
@@ -103,7 +103,7 @@ fn metrics_from_bam(
     let metrics = extract_from_bam::extract(
         &bam,
         threads,
-        &reference,
+        reference,
         min_read_len,
         arrow,
         karyotype,
@@ -192,6 +192,7 @@ fn extract() {
     metrics_from_bam(
         "test-data/small-test-phased.bam".to_string(),
         8,
+        None,
         0,
         true,
         true,
