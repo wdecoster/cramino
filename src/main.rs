@@ -1,5 +1,6 @@
 use clap::AppSettings::DeriveDisplayOrder;
 use clap::Parser;
+use extract_from_bam::Data;
 use log::{error, info};
 use std::path::PathBuf;
 
@@ -72,15 +73,22 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
     info!("Collected arguments");
-
-    metrics_from_bam(
-        args.input,
+    let metrics = extract_from_bam::extract(
+        &args.input,
         args.threads,
         args.reference,
         args.min_read_len,
+        args.arrow,
+        args.karyotype,
+        args.phased,
+        args.spliced,
+    );
+
+    metrics_from_bam(
+        metrics,
+        args.input,
         args.hist,
         args.checksum,
-        args.arrow,
         args.karyotype,
         args.phased,
         args.spliced,
@@ -89,36 +97,21 @@ fn main() {
 }
 
 fn metrics_from_bam(
+    metrics: Data,
     bam: String,
-    threads: usize,
-    reference: Option<String>,
-    min_read_len: usize,
     hist: bool,
     checksum: bool,
-    arrow: Option<String>,
     karyotype: bool,
     phased: bool,
     spliced: bool,
 ) {
-    let metrics = extract_from_bam::extract(
-        &bam,
-        threads,
-        reference,
-        min_read_len,
-        arrow,
-        karyotype,
-        phased,
-        spliced,
-    );
     let bam = file_info::BamFile { path: bam };
     println!("File name\t{}", bam.file_name());
-
-    let genome_size = utils::get_genome_size(&bam.path);
 
     generate_main_output(
         metrics.lengths.as_ref().unwrap(),
         metrics.identities.as_ref().unwrap(),
-        genome_size,
+        utils::get_genome_size(&bam.path),
     );
 
     println!("Path\t{}", bam);
@@ -189,16 +182,23 @@ fn verify_app() {
 
 #[test]
 fn extract() {
-    metrics_from_bam(
-        "test-data/small-test-phased.bam".to_string(),
+    let metrics = extract_from_bam::extract(
+        &"test-data/small-test-phased.bam".to_string(),
         8,
         None,
         0,
-        true,
-        true,
         Some("test.feather".to_string()),
         true,
         true,
+        false,
+    );
+    metrics_from_bam(
+        metrics,
+        "test-data/small-test-phased.bam".to_string(),
         true,
+        true,
+        true,
+        true,
+        false,
     )
 }
