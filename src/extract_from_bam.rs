@@ -15,6 +15,7 @@ pub struct Data {
 pub fn extract(
     bam_path: &String,
     threads: usize,
+    reference: Option<String>,
     min_read_len: usize,
     arrow: Option<String>,
     chroms: bool,
@@ -36,6 +37,13 @@ pub fn extract(
     };
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
+
+    match reference {
+        None => (),
+        Some(s) => bam
+            .set_reference(s)
+            .expect("Failure setting bam/cram reference"),
+    }
     for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
