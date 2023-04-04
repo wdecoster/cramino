@@ -37,9 +37,10 @@ pub fn extract(
     };
     bam.set_threads(threads)
         .expect("Failure setting decompression threads");
-    bam.set_reference(reference)
-        .expect("Failure setting bam/cram reference");
-
+    if !reference.is_empty() {
+        bam.set_reference(reference)
+            .expect("Failure setting bam/cram reference");
+    }
     for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))

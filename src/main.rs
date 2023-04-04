@@ -27,7 +27,7 @@ struct Cli {
     threads: usize,
 
     /// reference for decompressing bam/cram
-    #[clap(value_parser, validator=is_file, default_value = "")]
+    #[clap(long, default_value = "")]
     reference: String,
 
     /// Minimal length of read to be considered
