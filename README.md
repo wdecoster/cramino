@@ -90,3 +90,7 @@ A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory. Note th
  97.99806599444653 ..  98.99903299722327 [  416669 ]: ∎∎∎∎∎∎∎∎∎
  98.99903299722327 ..                100 [   39254 ]:
 ```
+
+## CITATION
+
+If you use this tool, please consider citing our [publication](https://academic.oup.com/bioinformatics/article/39/5/btad311/7160911).
