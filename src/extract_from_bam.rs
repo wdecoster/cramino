@@ -116,7 +116,7 @@ fn get_nm_tag(record: &bam::Record) -> u32 {
             Aux::U8(v) => u32::from(v),
             Aux::U16(v) => u32::from(v),
             Aux::U32(v) => v,
-            _ => panic!("Unexpected type of Aux {:?}", value),
+            _ => panic!("Unexpected type of Aux for NM tag: {:?}", value),
         },
         Err(_e) => panic!("Unexpected result while trying to access the NM tag"),
     }
@@ -129,7 +129,7 @@ fn get_de_tag(record: &bam::Record) -> Option<f32> {
     match record.aux(b"de") {
         Ok(value) => match value {
             Aux::Float(v) => Some(100.0 * (1.0 - v)),
-            _ => panic!("Unexpected type of Aux {:?}", value),
+            _ => panic!("Unexpected type of Aux for de tag: {:?}", value),
         },
         Err(_e) => None,
     }
@@ -141,7 +141,7 @@ fn get_phaseset(record: &bam::Record) -> Option<u32> {
             Aux::U8(v) => Some(u32::from(v)),
             Aux::U16(v) => Some(u32::from(v)),
             Aux::U32(v) => Some(v),
-            _ => panic!("Unexpected type of Aux {:?}", value),
+            _ => panic!("Unexpected type of Aux for phaseset: {:?}", value),
         },
         Err(_e) => None,
     }
