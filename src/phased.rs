@@ -57,7 +57,7 @@ fn median(array: &[i64]) -> f64 {
         let ind_right = array.len() / 2;
         (array[ind_left] + array[ind_right]) as f64 / 2.0
     } else {
-        array[(array.len() / 2)] as f64
+        array[array.len() / 2] as f64
     }
 }
 

@@ -14,6 +14,6 @@ pub fn median(array: &Vec<usize>) -> usize {
         let ind_right = array.len() / 2;
         (array[ind_left] + array[ind_right]) / 2
     } else {
-        array[(array.len() / 2)]
+        array[array.len() / 2]
     }
 }

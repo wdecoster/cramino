@@ -16,7 +16,7 @@ pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
         let ind_right = array.len() / 2;
         (array[ind_left].into() + array[ind_right].into()) / 2.0
     } else {
-        array[(array.len() / 2)].into()
+        array[array.len() / 2].into()
     }
 }
 
@@ -26,6 +26,6 @@ pub fn median_length(array: &[u64]) -> f64 {
         let ind_right = array.len() / 2;
         (array[ind_left] + array[ind_right]) as f64 / 2.0
     } else {
-        array[(array.len() / 2)] as f64
+        array[array.len() / 2] as f64
     }
 }
