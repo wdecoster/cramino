@@ -116,6 +116,7 @@ fn get_nm_tag(record: &bam::Record) -> u32 {
             Aux::U8(v) => u32::from(v),
             Aux::U16(v) => u32::from(v),
             Aux::U32(v) => v,
+            Aux::I32(v) => u32::try_from(v).expect("Identified a negative NM tag"),
             _ => panic!("Unexpected type of Aux for NM tag: {:?}", value),
         },
         Err(_e) => panic!("Unexpected result while trying to access the NM tag"),
