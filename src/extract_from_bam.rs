@@ -12,16 +12,7 @@ pub struct Data {
     pub exons: Option<Vec<usize>>,
 }
 
-pub fn extract(
-    bam_path: &String,
-    threads: usize,
-    reference: Option<String>,
-    min_read_len: usize,
-    arrow: Option<String>,
-    chroms: bool,
-    phase: bool,
-    spliced: bool,
-) -> Data {
+pub fn extract(args: &crate::Cli) -> Data {
     let mut lengths = vec![];
     let mut identities = vec![];
     let mut tids = vec![];
@@ -29,55 +20,75 @@ pub fn extract(
     let mut ends = vec![];
     let mut phasesets = vec![];
     let mut exons = vec![];
-    let mut bam = if bam_path == "-" {
+    let mut bam = if args.input == "-" {
         bam::Reader::from_stdin().expect("\n\nError reading alignments from stdin.\nDid you include the file header with -h?\n\n\n\n")
     } else {
-        bam::Reader::from_path(bam_path)
+        bam::Reader::from_path(&args.input)
             .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
     };
-    bam.set_threads(threads)
+    bam.set_threads(args.threads)
         .expect("Failure setting decompression threads");
 
-    match reference {
-        None => (),
-        Some(s) => bam
-            .set_reference(s)
-            .expect("Failure setting bam/cram reference"),
+    if let Some(s) = &args.reference {
+        bam.set_reference(s)
+            .expect("Failure setting bam/cram reference");
     }
+    let min_read_len = args.min_read_len;
+    let filter_closure: Box<dyn Fn(&bam::Record) -> bool> = match (args.ubam, args.min_read_len) {
+        (false, 0) => Box::new(|record: &bam::Record| {
+            record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
+        }),
+        (false, l) if l > 0 => Box::new(|record: &bam::Record| {
+            record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
+                && record.seq_len() > min_read_len
+        }),
+        (true, 0) => Box::new(|_: &bam::Record| true),
+        (true, l) if l > 0 => Box::new(|record: &bam::Record| record.seq_len() > min_read_len),
+        (false, _) | (true, _) => todo!(),
+    };
     for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
-        .filter(|read| read.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0)
-        .filter(|read| read.seq_len() > min_read_len)
+        .filter(|read| filter_closure(read))
     {
         lengths.push(read.seq_len() as u64);
-        if chroms || phase {
+        if args.karyotype || args.phased {
             tids.push(read.tid());
         }
-        if phase {
+        if args.phased {
             starts.push(read.pos());
             ends.push(read.reference_end());
             phasesets.push(get_phaseset(&read));
         }
-        if spliced {
+        if args.spliced {
             exons.push(get_exon_number(&read));
         }
-        identities.push(gap_compressed_identity(read));
+        if !args.ubam {
+            identities.push(gap_compressed_identity(read));
+        }
     }
-    match arrow {
-        None => (),
-        Some(s) => crate::feather::save_as_arrow(s, lengths.clone(), identities.clone()),
+    if let Some(s) = &args.arrow {
+        match args.ubam {
+            true => crate::feather::save_as_arrow_ubam(s.to_string(), lengths.clone()),
+            false => {
+                crate::feather::save_as_arrow(s.to_string(), lengths.clone(), identities.clone())
+            }
+        }
     }
     lengths.sort_unstable();
     identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     Data {
         lengths: Some(lengths),
-        identities: Some(identities),
-        tids: if chroms || phase { Some(tids) } else { None },
-        starts: if phase { Some(starts) } else { None },
-        ends: if phase { Some(ends) } else { None },
-        phasesets: if phase { Some(phasesets) } else { None },
-        exons: if spliced { Some(exons) } else { None },
+        identities: if !args.ubam { Some(identities) } else { None },
+        tids: if args.karyotype || args.phased {
+            Some(tids)
+        } else {
+            None
+        },
+        starts: if args.phased { Some(starts) } else { None },
+        ends: if args.phased { Some(ends) } else { None },
+        phasesets: if args.phased { Some(phasesets) } else { None },
+        exons: if args.spliced { Some(exons) } else { None },
     }
 }
 

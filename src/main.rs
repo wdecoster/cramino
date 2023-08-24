@@ -18,7 +18,7 @@ pub mod utils;
 #[derive(Parser, Debug)]
 #[structopt(global_settings=&[DeriveDisplayOrder])]
 #[clap(author, version, about="Tool to extract QC metrics from cram or bam", long_about = None)]
-struct Cli {
+pub struct Cli {
     /// cram or bam file to check
     #[clap(value_parser, validator=is_file)]
     input: String,
@@ -58,6 +58,10 @@ struct Cli {
     /// Provide metrics for spliced data
     #[clap(long, value_parser)]
     spliced: bool,
+
+    // Provide metrics for unaligned bam
+    #[clap(long, value_parser)]
+    ubam: bool,
 }
 
 pub fn is_file(pathname: &str) -> Result<(), String> {
@@ -74,56 +78,36 @@ pub fn is_file(pathname: &str) -> Result<(), String> {
 
 fn main() {
     env_logger::init();
-    let args = Cli::parse();
+    let mut args = Cli::parse();
+    if args.ubam {
+        args.karyotype = false;
+        args.phased = false;
+        args.spliced = false;
+    };
     info!("Collected arguments");
-    let metrics = extract_from_bam::extract(
-        &args.input,
-        args.threads,
-        args.reference,
-        args.min_read_len,
-        args.arrow,
-        args.karyotype,
-        args.phased,
-        args.spliced,
-    );
+    let metrics = extract_from_bam::extract(&args);
 
-    metrics_from_bam(
-        metrics,
-        args.input,
-        args.hist,
-        args.checksum,
-        args.karyotype,
-        args.phased,
-        args.spliced,
-    );
+    metrics_from_bam(metrics, args);
     info!("Finished");
 }
 
-fn metrics_from_bam(
-    metrics: Data,
-    bam: String,
-    hist: bool,
-    checksum: bool,
-    karyotype: bool,
-    phased: bool,
-    spliced: bool,
-) {
-    let bam = file_info::BamFile { path: bam };
+fn metrics_from_bam(metrics: Data, args: Cli) {
+    let bam = file_info::BamFile { path: args.input };
     println!("File name\t{}", bam.file_name());
 
     generate_main_output(
         metrics.lengths.as_ref().unwrap(),
-        metrics.identities.as_ref().unwrap(),
+        metrics.identities.as_ref(),
         utils::get_genome_size(&bam.path),
     );
 
     println!("Path\t{}", bam);
     println!("Creation time\t{}", bam.file_time());
-    if checksum {
+    if args.checksum {
         println!("Checksum\t{}", bam.checksum());
     }
 
-    let phaseblocks = if phased {
+    let phaseblocks = if args.phased {
         Some(phased::phase_metrics(
             metrics.tids.as_ref().unwrap(),
             metrics.starts.unwrap(),
@@ -133,22 +117,24 @@ fn metrics_from_bam(
     } else {
         None
     };
-    if karyotype {
+    if args.karyotype {
         karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
     }
-    if spliced {
+    if args.spliced {
         splicing::splice_metrics(metrics.exons.unwrap());
     }
-    if hist {
+    if args.hist {
         histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
-        histograms::make_histogram_identities(metrics.identities.as_ref().unwrap());
-        if phased {
+        if !args.ubam {
+            histograms::make_histogram_identities(metrics.identities.as_ref().unwrap());
+        }
+        if args.phased {
             histograms::make_histogram_phaseblocks(&phaseblocks.unwrap())
         }
     }
 }
 
-fn generate_main_output(lengths: &Vec<u64>, identities: &[f64], genome_size: u64) {
+fn generate_main_output(lengths: &Vec<u64>, identities: Option<&Vec<f64>>, genome_size: u64) {
     let num_reads = lengths.len();
     if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
@@ -164,11 +150,13 @@ fn generate_main_output(lengths: &Vec<u64>, identities: &[f64], genome_size: u64
     println!("N50\t{}", calculations::get_n50(lengths, data_yield));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
     println!("Mean length\t{:.2}", data_yield / num_reads as u64);
-    println!("Median identity\t{:.2}", calculations::median(identities));
-    println!(
-        "Mean identity\t{:.2}",
-        identities.iter().sum::<f64>() / (num_reads as f64)
-    );
+    if let Some(identities) = identities {
+        println!("Median identity\t{:.2}", calculations::median(identities));
+        println!(
+            "Mean identity\t{:.2}",
+            identities.iter().sum::<f64>() / (num_reads as f64)
+        );
+    }
 }
 
 #[cfg(test)]
@@ -185,23 +173,38 @@ fn verify_app() {
 
 #[test]
 fn extract() {
-    let metrics = extract_from_bam::extract(
-        &"test-data/small-test-phased.bam".to_string(),
-        8,
-        None,
-        0,
-        Some("test.feather".to_string()),
-        true,
-        true,
-        false,
-    );
-    metrics_from_bam(
-        metrics,
-        "test-data/small-test-phased.bam".to_string(),
-        true,
-        true,
-        true,
-        true,
-        false,
-    )
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: true,
+        checksum: true,
+        arrow: Some("test.feather".to_string()),
+        karyotype: true,
+        phased: true,
+        spliced: false,
+        ubam: false,
+    };
+    let metrics = extract_from_bam::extract(&args);
+    metrics_from_bam(metrics, args)
+}
+
+#[test]
+fn extract_ubam() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: true,
+        checksum: false,
+        arrow: Some("test.feather".to_string()),
+        karyotype: true,
+        phased: true,
+        spliced: true,
+        ubam: true,
+    };
+    let metrics = extract_from_bam::extract(&args);
+    metrics_from_bam(metrics, args)
 }
