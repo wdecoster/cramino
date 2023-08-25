@@ -27,7 +27,7 @@ pub struct Cli {
     #[clap(short, long, value_parser, default_value_t = 4)]
     threads: usize,
 
-    /// reference for decompressing bam/cram
+    /// reference for decompressing cram
     #[clap(long, value_parser)]
     reference: Option<String>,
 
@@ -43,7 +43,7 @@ pub struct Cli {
     #[clap(long, value_parser)]
     checksum: bool,
 
-    /// Write data to a feather format
+    /// Write data to an arrow format file
     #[clap(long, value_parser)]
     arrow: Option<String>,
 
@@ -59,7 +59,7 @@ pub struct Cli {
     #[clap(long, value_parser)]
     spliced: bool,
 
-    // Provide metrics for unaligned bam
+    /// Provide metrics for unaligned reads
     #[clap(long, value_parser)]
     ubam: bool,
 }

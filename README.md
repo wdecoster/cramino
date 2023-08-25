@@ -24,12 +24,14 @@ ARGS:
 OPTIONS:
     -t, --threads <THREADS>            Number of parallel decompression threads to use [default: 4]
     -m, --min-read-len <MIN_READ_LEN>  Minimal length of read to be considered [default: 0]
+    --reference <REFERENCE>            Reference for decompressing cram
     --hist                             If histograms have to be generated
     --checksum                         If a checksum has to be calculated
-    --arrow <ARROW>                    Write data to a feather format
+    --arrow <filename>                 Write data to an arrow format file
     --karyotype                        Provide normalized number of reads per chromosome
     --phased                           Calculate metrics for phased reads
     --spliced                          Calculate metrics for spliced reads
+    --ubam                             Provide metrics for unaligned reads
     -h, --help                         Print help information
     -V, --version                      Print version information
 ```
@@ -57,6 +59,7 @@ A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory. Note th
 * an arrow file for use within [NanoPlot](https://github.com/wdecoster/NanoPlot) and [NanoComp](https://github.com/wdecoster/nanocomp) (`--arrow <filename>`)
 * calculating a normalised number of reads per chromosome, e.g. to determine the sex or aneuploidies (`--karyotype`)
 * information about the phase blocks. (`--phased`)
+* information about number of splice sites. (`--spliced`)
 * histograms of read lengths and read identities, as below. (`--hist`)
 
 ```text
