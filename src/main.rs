@@ -147,7 +147,10 @@ fn generate_main_output(lengths: &Vec<u64>, identities: Option<&Vec<f64>>, genom
         "Mean coverage\t{:.2}",
         data_yield as f64 / genome_size as f64
     );
+    let data_yield_long = lengths.iter().filter(|l| l > &&25000).sum::<u64>();
+    println!("Yield [Gb] (>25kb)\t{:.2}", data_yield_long as f64 / 1e9);
     println!("N50\t{}", calculations::get_n50(lengths, data_yield));
+    println!("N75\t{}", calculations::get_n75(lengths, data_yield));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
     println!("Mean length\t{:.2}", data_yield / num_reads as u64);
     if let Some(identities) = identities {

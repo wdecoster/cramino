@@ -75,8 +75,9 @@ pub fn extract(args: &crate::Cli) -> Data {
             }
         }
     }
-    lengths.sort_unstable();
-    identities.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    // sort vectors in descending order (required for N50/N75)
+    lengths.sort_unstable_by(|a, b| b.cmp(a));
+    identities.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     Data {
         lengths: Some(lengths),
         identities: if !args.ubam { Some(identities) } else { None },

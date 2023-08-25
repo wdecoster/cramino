@@ -10,6 +10,18 @@ pub fn get_n50(lengths: &Vec<u64>, nb_bases_total: u64) -> u64 {
     lengths[lengths.len() - 1]
 }
 
+pub fn get_n75(lengths: &Vec<u64>, nb_bases_total: u64) -> u64 {
+    let mut acc = 0;
+    for val in lengths.iter() {
+        acc += *val;
+        if acc as f64 > nb_bases_total as f64 * 0.75 {
+            return *val;
+        }
+    }
+
+    lengths[lengths.len() - 1]
+}
+
 pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
