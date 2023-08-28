@@ -577,6 +577,7 @@ dependencies = [
  "env_logger",
  "histo_fp",
  "itertools",
+ "libz-sys",
  "log",
  "rayon",
  "rust-htslib",
