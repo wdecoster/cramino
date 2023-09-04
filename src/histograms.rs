@@ -76,7 +76,7 @@ fn accuracy_to_phred(identity: f64) -> usize {
     // convert identity to phred scale
     // but return as usize (as that will be used for the histogram)
     // this is therefore not accurate for other applications
-    (-10.0 * (1.0 - identity).log10()) as usize
+    (-10.0 * (1.0 - identity / 100.0).log10()) as usize
 }
 
 pub fn make_histogram_phaseblocks(array: &[i64]) {
