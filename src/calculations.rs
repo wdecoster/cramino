@@ -41,3 +41,14 @@ pub fn median_length(array: &[u64]) -> f64 {
         array[array.len() / 2] as f64
     }
 }
+
+pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
+    array.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    if (array.len() % 2) == 0 {
+        let ind_left = array.len() / 2 - 1;
+        let ind_right = array.len() / 2;
+        (array[ind_left] + array[ind_right]) / 2.0
+    } else {
+        array[array.len() / 2]
+    }
+}

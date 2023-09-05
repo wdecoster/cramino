@@ -1,5 +1,14 @@
-use histo_fp::Histogram;
 use itertools::Itertools;
+
+// the histograms below are fully defined by the step size and the maximum value
+// the step size is the size of each bin
+// the maximum value is the value of the last bin
+// all values above the last bin are counted in the last bin, which is printed separately
+// the dotsize variable determines how many reads are represented by a single dot, which is currently hardcoded
+// I either have to set this dynamically or experiment with it further
+// the functions are duplicated for flexibility in printing the name and formatting the histogram labels
+// as well as for future customizations
+// in principle it would be possible to enable the user to change the step size or max value, but I don't want to add too many options to the CLI
 
 pub fn make_histogram_lengths(array: &[u64]) {
     let stepsize: u64 = 2000;
@@ -17,8 +26,8 @@ pub fn make_histogram_lengths(array: &[u64]) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = array.len() / 500;
-    // sort the keys as numbers up to the '-', not strings
-    println!("\n\n# Histogram for lengths:");
+    println!("\n\n# Histogram for read lengths:");
+    // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
         println!(
             "{: >11} {}",
@@ -42,7 +51,7 @@ pub fn make_histogram_identities(array: &[f64]) {
     let max_value = 40;
     let step_count = max_value / stepsize as usize;
     let mut counts = vec![0; step_count + 1];
-    for value in array.iter().map(|x| accuracy_to_phred(*x)) {
+    for value in array.iter().map(|x| crate::utils::accuracy_to_phred(*x)) {
         if value < max_value {
             counts[value] += 1;
         }
@@ -52,8 +61,8 @@ pub fn make_histogram_identities(array: &[f64]) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = array.len() / 500;
-    // sort the keys as numbers up to the '-', not strings
     println!("\n\n# Histogram for Phred-scaled accuracies:");
+    // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
         println!(
             "{: >6} {}",
@@ -72,17 +81,42 @@ pub fn make_histogram_identities(array: &[f64]) {
     );
 }
 
-fn accuracy_to_phred(identity: f64) -> usize {
-    // convert identity to phred scale
-    // but return as usize (as that will be used for the histogram)
-    // this is therefore not accurate for other applications
-    (-10.0 * (1.0 - identity / 100.0).log10()) as usize
-}
-
 pub fn make_histogram_phaseblocks(array: &[i64]) {
-    let mut histogram = Histogram::with_buckets(100, Some(2));
+    // this is a tricky one, as the scale of the length of phaseblocks is hard to predict
+    // I may have to increase its max value in the future
+    // this configuration seemed sufficient for a randomly picked test file phased with LongShot
+    // but presumably other tools can do better, especially with longer reads, and therefore I left some room for longer phase blocks
+    let stepsize: i64 = 10000;
+    let max_value = 1_000_000;
+    let step_count = max_value / stepsize as usize;
+    let mut counts = vec![0; step_count + 1];
     for value in array.iter() {
-        histogram.add(*value as f64);
+        let index = (value / stepsize) as usize;
+        if index < counts.len() {
+            counts[index] += 1;
+        }
     }
-    println!("\n\n# Histogram for phaseblocks\n{}", histogram);
+    // the last bin is for all values above the last step
+    counts[step_count] = array.len() - counts.iter().sum::<usize>();
+    // the dotsize variable determines how many reads are represented by a single dot
+    // I either have to set this dynamically or experiment with it further
+    let dotsize = array.len() / 500;
+    println!("\n\n# Histogram for phaseblock lengths:");
+    // print every entry in the vector, except the last one which is done separately
+    for (index, entry) in counts.iter().dropping_back(1).enumerate() {
+        println!(
+            "{: >14} {}",
+            format!(
+                "{}-{}",
+                index as i64 * stepsize,
+                (index + 1) * stepsize as usize
+            ),
+            "∎".repeat(entry / dotsize)
+        );
+    }
+    println!(
+        "{: >14} {}",
+        format!("{}+", (counts.len() - 1) * stepsize as usize),
+        "∎".repeat(counts.last().unwrap() / dotsize)
+    );
 }
