@@ -1,20 +1,8 @@
-pub fn get_n50(lengths: &Vec<u64>, nb_bases_total: u64) -> u64 {
+pub fn get_n(lengths: &Vec<u64>, nb_bases_total: u64, percentile: f64) -> u64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
-        if acc > nb_bases_total / 2 {
-            return *val;
-        }
-    }
-
-    lengths[lengths.len() - 1]
-}
-
-pub fn get_n75(lengths: &Vec<u64>, nb_bases_total: u64) -> u64 {
-    let mut acc = 0;
-    for val in lengths.iter() {
-        acc += *val;
-        if acc as f64 > nb_bases_total as f64 * 0.75 {
+        if acc as f64 > nb_bases_total as f64 * percentile {
             return *val;
         }
     }
