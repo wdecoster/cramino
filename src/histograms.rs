@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::cmp::max;
 
 // the histograms below are fully defined by the step size and the maximum value
 // the step size is the size of each bin
@@ -25,7 +26,7 @@ pub fn make_histogram_lengths(array: &[u64]) {
     counts[step_count] = array.len() - counts.iter().sum::<usize>();
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
-    let dotsize = array.len() / 500;
+    let dotsize = max(array.len() / 500, 1);
     println!("\n\n# Histogram for read lengths:");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
@@ -60,7 +61,7 @@ pub fn make_histogram_identities(array: &[f64]) {
     counts[step_count] = array.len() - counts.iter().sum::<usize>();
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
-    let dotsize = array.len() / 500;
+    let dotsize = max(array.len() / 500, 1);
     println!("\n\n# Histogram for Phred-scaled accuracies:");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
@@ -100,7 +101,7 @@ pub fn make_histogram_phaseblocks(array: &[i64]) {
     counts[step_count] = array.len() - counts.iter().sum::<usize>();
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
-    let dotsize = array.len() / 500;
+    let dotsize = max(array.len() / 500, 1);
     println!("\n\n# Histogram for phaseblock lengths:");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {

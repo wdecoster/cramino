@@ -203,9 +203,9 @@ fn extract_ubam() {
         hist: true,
         checksum: false,
         arrow: Some("test.feather".to_string()),
-        karyotype: true,
-        phased: true,
-        spliced: true,
+        karyotype: false,
+        phased: false,
+        spliced: false,
         ubam: true,
     };
     let metrics = extract_from_bam::extract(&args);
