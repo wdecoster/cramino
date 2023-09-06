@@ -120,9 +120,13 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
     if args.karyotype {
         karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
     }
-    if args.spliced {
-        splicing::splice_metrics(metrics.exons.unwrap());
-    }
+    let exon_counts = if let Some(mut exon_counts) = metrics.exons {
+        exon_counts.sort_unstable();
+        splicing::splice_metrics(&exon_counts);
+        exon_counts
+    } else {
+        Vec::new()
+    };
     if args.hist {
         histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
         if !args.ubam {
@@ -130,6 +134,9 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
         }
         if args.phased {
             histograms::make_histogram_phaseblocks(&phaseblocks.unwrap())
+        }
+        if args.spliced {
+            histograms::make_histogram_exons(&exon_counts);
         }
     }
 }

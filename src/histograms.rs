@@ -121,3 +121,40 @@ pub fn make_histogram_phaseblocks(array: &[i64]) {
         "∎".repeat(counts.last().unwrap() / dotsize)
     );
 }
+
+pub fn make_histogram_exons(array: &[usize]) {
+    let max_value = 15;
+    let step_count = max_value;
+    let mut counts = vec![0; step_count + 1];
+    for value in array.iter() {
+        if *value < max_value {
+            counts[*value] += 1;
+        }
+    }
+    // the last bin is for all values above the last step
+    counts[step_count] = array.len() - counts.iter().sum::<usize>();
+    // the dotsize variable determines how many reads are represented by a single dot
+    // I either have to set this dynamically or experiment with it further
+    let dotsize = max(array.len() / 500, 1);
+    println!("\n\n# Histogram for number of exons:");
+    // print the second entry in the vector. The first entry is 0 exons, which is not used (empty)
+    // 1 exon is renamed to unspliced
+    println!(
+        "{: >9} {}",
+        format!("unspliced"),
+        "∎".repeat(counts[1] / dotsize)
+    );
+    // print every entry in the vector, except the first two (first one empty, and second one already done) and last one (done later)
+    for (index, entry) in counts.iter().skip(2).dropping_back(1).enumerate() {
+        println!(
+            "{: >9} {}",
+            format!("{} exons", (index + 2)),
+            "∎".repeat(entry / dotsize)
+        );
+    }
+    println!(
+        "{: >9} {}",
+        format!("{}+ exons", (counts.len() - 1)),
+        "∎".repeat(counts.last().unwrap() / dotsize)
+    );
+}
