@@ -40,3 +40,13 @@ pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
         array[array.len() / 2]
     }
 }
+
+pub fn median_splice(array: &Vec<usize>) -> usize {
+    if (array.len() % 2) == 0 {
+        let ind_left = array.len() / 2 - 1;
+        let ind_right = array.len() / 2;
+        (array[ind_left] + array[ind_right]) / 2
+    } else {
+        array[array.len() / 2]
+    }
+}
