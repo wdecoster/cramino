@@ -99,6 +99,7 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
         metrics.lengths.as_ref().unwrap(),
         metrics.identities.as_ref(),
         utils::get_genome_size(&bam.path),
+        metrics.all_counts,
     );
 
     println!("Path\t{}", bam);
@@ -141,7 +142,12 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
     }
 }
 
-fn generate_main_output(lengths: &Vec<u64>, identities: Option<&Vec<f64>>, genome_size: u64) {
+fn generate_main_output(
+    lengths: &Vec<u64>,
+    identities: Option<&Vec<f64>>,
+    genome_size: u64,
+    all_reads: usize,
+) {
     let num_reads = lengths.len();
     if num_reads < 2 {
         error!("Not enough reads to calculate metrics!");
@@ -149,6 +155,10 @@ fn generate_main_output(lengths: &Vec<u64>, identities: Option<&Vec<f64>>, genom
     }
     let data_yield: u64 = lengths.iter().sum::<u64>();
     println!("Number of reads\t{num_reads}");
+    println!(
+        "% from total reads\t{:.2}",
+        (num_reads as f64) / (all_reads as f64) * 100.0
+    );
     println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
     println!(
         "Mean coverage\t{:.2}",

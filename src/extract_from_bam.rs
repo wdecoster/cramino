@@ -4,6 +4,7 @@ use rust_htslib::{bam, bam::Read, htslib};
 
 pub struct Data {
     pub lengths: Option<Vec<u64>>,
+    pub all_counts: usize,
     pub identities: Option<Vec<f64>>,
     pub tids: Option<Vec<i32>>,
     pub starts: Option<Vec<i64>>,
@@ -34,6 +35,9 @@ pub fn extract(args: &crate::Cli) -> Data {
             .expect("Failure setting bam/cram reference");
     }
     let min_read_len = args.min_read_len;
+    // the match statement below is a bit ugly, but it is the only way to get a closure
+    // that closure is used for filtering the reads
+    // the closure is different depending on inclusion of unmapped reads (--ubam) and the minimum read length (--min-read-len)
     let filter_closure: Box<dyn Fn(&bam::Record) -> bool> = match (args.ubam, args.min_read_len) {
         (false, 0) => Box::new(|record: &bam::Record| {
             record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
@@ -44,11 +48,14 @@ pub fn extract(args: &crate::Cli) -> Data {
         }),
         (true, 0) => Box::new(|_: &bam::Record| true),
         (true, l) if l > 0 => Box::new(|record: &bam::Record| record.seq_len() > min_read_len),
-        (false, _) | (true, _) => todo!(),
+        // the pattern below should be unreachable, as the min_read_len is either zero or positive
+        (false, _) | (true, _) => unreachable!(),
     };
+    let mut all_counts = 0;
     for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
+        .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
         lengths.push(read.seq_len() as u64);
@@ -80,6 +87,7 @@ pub fn extract(args: &crate::Cli) -> Data {
     identities.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     Data {
         lengths: Some(lengths),
+        all_counts,
         identities: if !args.ubam { Some(identities) } else { None },
         tids: if args.karyotype || args.phased {
             Some(tids)

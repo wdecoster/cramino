@@ -41,6 +41,7 @@ OPTIONS:
 ```text
 File name       example.cram
 Number of reads 14108020
+% from total reads  83.45
 Yield [Gb]      139.91
 N50     17447
 Median length   6743.00
@@ -52,6 +53,7 @@ Creation time   09/09/2022 10:53:36
 ```
 
 A 140Gbase bam file is processed in 12 minutes, using <1Gbyte of memory. Note that the identity score above is defined as the [gap-compressed identity](https://lh3.github.io/2018/11/25/on-the-definition-of-sequence-identity). The `--ubam` flag will provide metrics for all reads in the file, regardless of whether they are aligned or not.
+The `% from total reads` output field contains the percentage of reads used for this report, depending on the `--min-read-len` and `--ubam` settings.
 
 ### Optional output
 
