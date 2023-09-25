@@ -154,7 +154,7 @@ fn generate_main_output(
         panic!();
     }
     let data_yield: u64 = lengths.iter().sum::<u64>();
-    println!("Number of reads\t{num_reads}");
+    println!("Number of alignments\t{num_reads}");
     println!(
         "% from total reads\t{:.2}",
         (num_reads as f64) / (all_reads as f64) * 100.0
@@ -213,7 +213,7 @@ fn extract() {
 #[test]
 fn extract_ubam() {
     let args = Cli {
-        input: "test-data/small-test-phased.bam".to_string(),
+        input: "test-data/small-test-ubam.bam".to_string(),
         threads: 8,
         reference: None,
         min_read_len: 0,

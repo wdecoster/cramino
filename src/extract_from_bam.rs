@@ -58,7 +58,11 @@ pub fn extract(args: &crate::Cli) -> Data {
         .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
-        lengths.push(read.seq_len() as u64);
+        lengths.push(
+            read.seq_len() as u64
+                - read.cigar().leading_softclips() as u64
+                - read.cigar().trailing_softclips() as u64,
+        );
         if args.karyotype || args.phased {
             tids.push(read.tid());
         }
