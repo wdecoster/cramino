@@ -14,11 +14,9 @@ pub fn make_karyotype(tids: &Vec<i32>, bamp: String) {
     let mut norm_count = vec![];
     for (tid, count) in tidcount.into_iter() {
         let chrom = std::str::from_utf8(head_view.tid2name(tid.try_into().unwrap())).unwrap();
-        if !chrom.contains('_') {
-            let chrom_length = head_view.target_len(tid.try_into().unwrap()).unwrap();
-            chroms.push(chrom);
-            norm_count.push((count as f32) / (chrom_length as f32));
-        }
+        let chrom_length = head_view.target_len(tid.try_into().unwrap()).unwrap();
+        chroms.push(chrom);
+        norm_count.push((count as f32) / (chrom_length as f32));
     }
     let median_count = crate::calculations::median_phaseblocks(norm_count.clone());
     let mut zipped = chroms.iter().zip(norm_count).collect::<Vec<_>>();
