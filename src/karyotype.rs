@@ -23,8 +23,12 @@ pub fn make_karyotype(tids: &Vec<i32>, bamp: String) {
     let median_count = crate::calculations::median_phaseblocks(norm_count.clone());
     let mut zipped = chroms.iter().zip(norm_count).collect::<Vec<_>>();
     zipped.sort_by_key(|&(&val, _)| val);
-    println!("\n\n# Normalized read count per chromosome\n");
-    for (chrom, count) in zipped {
-        println!("{}\t{:.2}", chrom, count / median_count)
+    if !zipped.is_empty() {
+        println!("\n\n# Normalized read count per chromosome\n");
+        for (chrom, count) in zipped {
+            println!("{}\t{:.2}", chrom, count / median_count)
+        }
+    } else {
+        println!("\n\n# Warning - no contigs found in BAM file!\n");
     }
 }
