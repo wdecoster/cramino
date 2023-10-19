@@ -30,5 +30,3 @@ libz-sys = "1.1.12"
 [dev-dependencies]
 ctor = "0.2.4"
 
-[target.x86_64-apple-darwin]
-rustflags = ["-C", "link-arg=-mmacosx-version-min=10.12"]
