@@ -3,7 +3,7 @@ use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read, htslib};
 
 pub struct Data {
-    pub lengths: Option<Vec<u64>>,
+    pub lengths: Option<Vec<u128>>,
     pub all_counts: usize,
     pub identities: Option<Vec<f64>>,
     pub tids: Option<Vec<i32>>,
@@ -59,9 +59,9 @@ pub fn extract(args: &crate::Cli) -> Data {
         .filter(|read| filter_closure(read))
     {
         lengths.push(
-            read.seq_len() as u64
-                - read.cigar().leading_softclips() as u64
-                - read.cigar().trailing_softclips() as u64,
+            read.seq_len() as u128
+                - read.cigar().leading_softclips() as u128
+                - read.cigar().trailing_softclips() as u128,
         );
         if args.karyotype || args.phased {
             tids.push(read.tid());
@@ -80,10 +80,15 @@ pub fn extract(args: &crate::Cli) -> Data {
     }
     if let Some(s) = &args.arrow {
         match args.ubam {
-            true => crate::feather::save_as_arrow_ubam(s.to_string(), lengths.clone()),
-            false => {
-                crate::feather::save_as_arrow(s.to_string(), lengths.clone(), identities.clone())
-            }
+            true => crate::feather::save_as_arrow_ubam(
+                s.to_string(),
+                lengths.clone().iter().map(|x| *x as u64).collect(),
+            ),
+            false => crate::feather::save_as_arrow(
+                s.to_string(),
+                lengths.clone().iter().map(|x| *x as u64).collect(),
+                identities.clone(),
+            ),
         }
     }
     // sort vectors in descending order (required for N50/N75)

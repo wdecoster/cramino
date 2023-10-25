@@ -1,4 +1,4 @@
-pub fn get_n(lengths: &Vec<u64>, nb_bases_total: u64, percentile: f64) -> u64 {
+pub fn get_n(lengths: &Vec<u128>, nb_bases_total: u128, percentile: f64) -> u128 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
@@ -20,7 +20,7 @@ pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
     }
 }
 
-pub fn median_length(array: &[u64]) -> f64 {
+pub fn median_length(array: &[u128]) -> f64 {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;

@@ -142,7 +142,7 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
 }
 
 fn generate_main_output(
-    lengths: &Vec<u64>,
+    lengths: &Vec<u128>,
     identities: Option<&Vec<f64>>,
     genome_size: u64,
     all_reads: usize,
@@ -152,7 +152,7 @@ fn generate_main_output(
         error!("Not enough reads to calculate metrics!");
         panic!();
     }
-    let data_yield: u64 = lengths.iter().sum::<u64>();
+    let data_yield: u128 = lengths.iter().sum::<u128>();
     println!("Number of alignments\t{num_reads}");
     println!(
         "% from total reads\t{:.2}",
@@ -163,12 +163,12 @@ fn generate_main_output(
         "Mean coverage\t{:.2}",
         data_yield as f64 / genome_size as f64
     );
-    let data_yield_long = lengths.iter().filter(|l| l > &&25000).sum::<u64>();
+    let data_yield_long = lengths.iter().filter(|l| l > &&25000).sum::<u128>();
     println!("Yield [Gb] (>25kb)\t{:.2}", data_yield_long as f64 / 1e9);
     println!("N50\t{}", calculations::get_n(lengths, data_yield, 0.50));
     println!("N75\t{}", calculations::get_n(lengths, data_yield, 0.75));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
-    println!("Mean length\t{:.2}", data_yield / num_reads as u64);
+    println!("Mean length\t{:.2}", data_yield / num_reads as u128);
     if let Some(identities) = identities {
         println!("Median identity\t{:.2}", calculations::median(identities));
         println!(

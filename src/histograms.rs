@@ -11,8 +11,8 @@ use std::cmp::max;
 // as well as for future customizations
 // in principle it would be possible to enable the user to change the step size or max value, but I don't want to add too many options to the CLI
 
-pub fn make_histogram_lengths(array: &[u64]) {
-    let stepsize: u64 = 2000;
+pub fn make_histogram_lengths(array: &[u128]) {
+    let stepsize: u128 = 2000;
     let max_value = 60_000;
     let step_count = max_value / stepsize as usize;
     let mut counts = vec![0; step_count + 1];
@@ -34,7 +34,7 @@ pub fn make_histogram_lengths(array: &[u64]) {
             "{: >11} {}",
             format!(
                 "{}-{}",
-                index as u64 * stepsize,
+                index as u128 * stepsize,
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
