@@ -1,4 +1,3 @@
-use clap::AppSettings::DeriveDisplayOrder;
 use clap::Parser;
 use extract_from_bam::Data;
 use log::{error, info};
@@ -16,11 +15,10 @@ pub mod utils;
 
 // The arguments end up in the Cli struct
 #[derive(Parser, Debug)]
-#[structopt(global_settings=&[DeriveDisplayOrder])]
 #[clap(author, version, about="Tool to extract QC metrics from cram or bam", long_about = None)]
 pub struct Cli {
     /// cram or bam file to check
-    #[clap(value_parser, validator=is_file)]
+    #[clap(value_parser)]
     input: String,
 
     /// Number of parallel decompression threads to use
@@ -79,6 +77,7 @@ pub fn is_file(pathname: &str) -> Result<(), String> {
 fn main() {
     env_logger::init();
     let mut args = Cli::parse();
+    is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
     if args.ubam {
         args.karyotype = false;
         args.phased = false;
