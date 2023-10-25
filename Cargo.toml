@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.13.0"
+version = "0.13.1"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -21,7 +21,7 @@ env_logger = "0.10.0"
 checksums = "0.9.1"
 chrono = "0.4.22"
 rayon = "1.5.3"
-arrow = "46.0.0"
+arrow = "48.0.0"
 unzip-n = "0.1.2"
 itertools = "0.11.0"
 
@@ -29,4 +29,3 @@ libz-sys = "1.1.12"
 
 [dev-dependencies]
 ctor = "0.2.4"
-
