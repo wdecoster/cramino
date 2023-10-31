@@ -58,11 +58,11 @@ pub fn extract(args: &crate::Cli) -> Data {
         .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
-        lengths.push(
-            read.seq_len() as u128
-                - read.cigar().leading_softclips() as u128
-                - read.cigar().trailing_softclips() as u128,
-        );
+        if args.ubam {
+            lengths.push(read.seq_len() as u128);
+        } else {
+            lengths.push(read.seq_len() as u128 - softclipped_bases(&read));
+        }
         if args.karyotype || args.phased {
             tids.push(read.tid());
         }
@@ -189,4 +189,8 @@ fn get_exon_number(record: &bam::Record) -> usize {
     }
 
     exon_count
+}
+
+fn softclipped_bases(read: &bam::Record) -> u128 {
+    (read.cigar().leading_softclips() + read.cigar().trailing_softclips()) as u128
 }
