@@ -18,22 +18,22 @@ Or for Rust developers, build cramino with cargo:
 ```text
 cramino [OPTIONS] <INPUT>
 
-ARGS:
-    <INPUT>    cram or bam file to check (or - to read from stdin)
+Arguments:
+  [INPUT]  cram or bam file to check [default: -]
 
-OPTIONS:
-    -t, --threads <THREADS>            Number of parallel decompression threads to use [default: 4]
-    -m, --min-read-len <MIN_READ_LEN>  Minimal length of read to be considered [default: 0]
-    --reference <REFERENCE>            Reference for decompressing cram
-    --hist                             If histograms have to be generated
-    --checksum                         If a checksum has to be calculated
-    --arrow <filename>                 Write data to an arrow format file
-    --karyotype                        Provide normalized number of reads per chromosome
-    --phased                           Calculate metrics for phased reads
-    --spliced                          Calculate metrics for spliced reads
-    --ubam                             Provide metrics for unaligned reads
-    -h, --help                         Print help information
-    -V, --version                      Print version information
+Options:
+  -t, --threads <THREADS>            Number of parallel decompression threads to use [default: 4]
+      --reference <REFERENCE>        reference for decompressing cram
+  -m, --min-read-len <MIN_READ_LEN>  Minimal length of read to be considered [default: 0]
+      --hist                         If histograms have to be generated
+      --checksum                     If a checksum has to be calculated
+      --arrow <ARROW>                Write data to an arrow format file
+      --karyotype                    Provide normalized number of reads per chromosome
+      --phased                       Calculate metrics for phased reads
+      --spliced                      Provide metrics for spliced data
+      --ubam                         Provide metrics for unaligned reads
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 ## Example output
