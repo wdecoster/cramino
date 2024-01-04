@@ -91,7 +91,11 @@ fn main() -> Result<(), rust_htslib::errors::Error> {
     Ok(())
 }
 
-fn metrics_from_bam(metrics: Data, args: Cli, header: rust_htslib::bam::Header) -> Result<(), rust_htslib::errors::Error> {
+fn metrics_from_bam(
+    metrics: Data,
+    args: Cli,
+    header: rust_htslib::bam::Header,
+) -> Result<(), rust_htslib::errors::Error> {
     let bam = file_info::BamFile { path: args.input };
     println!("File name\t{}", bam.file_name());
 

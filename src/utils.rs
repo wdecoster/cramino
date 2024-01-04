@@ -1,4 +1,6 @@
-pub fn get_genome_size(header: &rust_htslib::bam::Header) -> Result<u64, rust_htslib::errors::Error> {
+pub fn get_genome_size(
+    header: &rust_htslib::bam::Header,
+) -> Result<u64, rust_htslib::errors::Error> {
     let mut genome_size = 0;
     // print header records to the terminal, akin to samtool
     for (key, records) in header.to_hashmap() {
