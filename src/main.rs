@@ -18,7 +18,7 @@ pub mod utils;
 #[clap(author, version, about="Tool to extract QC metrics from cram or bam", long_about = None)]
 pub struct Cli {
     /// cram or bam file to check
-    #[clap(value_parser)]
+    #[clap(value_parser, default_value = "-")]
     input: String,
 
     /// Number of parallel decompression threads to use
@@ -74,7 +74,7 @@ pub fn is_file(pathname: &str) -> Result<(), String> {
     }
 }
 
-fn main() {
+fn main() -> Result<(), rust_htslib::errors::Error> {
     env_logger::init();
     let mut args = Cli::parse();
     is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
@@ -84,20 +84,22 @@ fn main() {
         args.spliced = false;
     };
     info!("Collected arguments");
-    let metrics = extract_from_bam::extract(&args);
+    let (metrics, header) = extract_from_bam::extract(&args);
 
-    metrics_from_bam(metrics, args);
+    metrics_from_bam(metrics, args, header)?;
     info!("Finished");
+    Ok(())
 }
 
-fn metrics_from_bam(metrics: Data, args: Cli) {
+fn metrics_from_bam(metrics: Data, args: Cli, header: rust_htslib::bam::Header) -> Result<(), rust_htslib::errors::Error> {
     let bam = file_info::BamFile { path: args.input };
     println!("File name\t{}", bam.file_name());
 
+    let genome_size = utils::get_genome_size(&header)?;
     generate_main_output(
         metrics.lengths.as_ref().unwrap(),
         metrics.identities.as_ref(),
-        utils::get_genome_size(&bam.path),
+        genome_size,
         metrics.all_counts,
     );
 
@@ -139,6 +141,7 @@ fn metrics_from_bam(metrics: Data, args: Cli) {
             histograms::make_histogram_exons(&exon_counts);
         }
     }
+    Ok(())
 }
 
 fn generate_main_output(
@@ -205,8 +208,8 @@ fn extract() {
         spliced: false,
         ubam: false,
     };
-    let metrics = extract_from_bam::extract(&args);
-    metrics_from_bam(metrics, args)
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_from_bam(metrics, args, header).is_ok())
 }
 
 #[test]
@@ -224,6 +227,6 @@ fn extract_ubam() {
         spliced: false,
         ubam: true,
     };
-    let metrics = extract_from_bam::extract(&args);
-    metrics_from_bam(metrics, args)
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_from_bam(metrics, args, header).is_ok())
 }

@@ -23,6 +23,9 @@ impl BamFile {
     }
 
     pub fn file_time(&self) -> String {
+        if self.path == "-" {
+            return "NA".to_string();
+        }
         let metadata = fs::metadata(&self.path);
         if let Ok(time) = metadata.unwrap().created() {
             let datetime: DateTime<Local> = time.into();
