@@ -13,7 +13,7 @@ pub struct Data {
     pub exons: Option<Vec<usize>>,
 }
 
-pub fn extract(args: &crate::Cli) -> Data {
+pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     let mut lengths = vec![];
     let mut identities = vec![];
     let mut tids = vec![];
@@ -27,6 +27,8 @@ pub fn extract(args: &crate::Cli) -> Data {
         bam::Reader::from_path(&args.input)
             .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
     };
+    let header = bam.header().clone();
+    let header = rust_htslib::bam::Header::from_template(&header);
     bam.set_threads(args.threads)
         .expect("Failure setting decompression threads");
 
@@ -94,20 +96,23 @@ pub fn extract(args: &crate::Cli) -> Data {
     // sort vectors in descending order (required for N50/N75)
     lengths.sort_unstable_by(|a, b| b.cmp(a));
     identities.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
-    Data {
-        lengths: Some(lengths),
-        all_counts,
-        identities: if !args.ubam { Some(identities) } else { None },
-        tids: if args.karyotype || args.phased {
-            Some(tids)
-        } else {
-            None
+    (
+        Data {
+            lengths: Some(lengths),
+            all_counts,
+            identities: if !args.ubam { Some(identities) } else { None },
+            tids: if args.karyotype || args.phased {
+                Some(tids)
+            } else {
+                None
+            },
+            starts: if args.phased { Some(starts) } else { None },
+            ends: if args.phased { Some(ends) } else { None },
+            phasesets: if args.phased { Some(phasesets) } else { None },
+            exons: if args.spliced { Some(exons) } else { None },
         },
-        starts: if args.phased { Some(starts) } else { None },
-        ends: if args.phased { Some(ends) } else { None },
-        phasesets: if args.phased { Some(phasesets) } else { None },
-        exons: if args.spliced { Some(exons) } else { None },
-    }
+        header,
+    )
 }
 
 /// Calculates the gap-compressed identity

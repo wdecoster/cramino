@@ -1,8 +1,6 @@
-use rust_htslib::{bam, bam::Read};
-
-pub fn get_genome_size(bamp: &String) -> u64 {
-    let bam = bam::Reader::from_path(bamp).unwrap();
-    let header = bam::Header::from_template(bam.header());
+pub fn get_genome_size(
+    header: &rust_htslib::bam::Header,
+) -> Result<u64, rust_htslib::errors::Error> {
     let mut genome_size = 0;
     // print header records to the terminal, akin to samtool
     for (key, records) in header.to_hashmap() {
@@ -14,7 +12,7 @@ pub fn get_genome_size(bamp: &String) -> u64 {
             }
         }
     }
-    genome_size
+    Ok(genome_size)
 }
 
 pub fn accuracy_to_phred(identity: f64) -> usize {
