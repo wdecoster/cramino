@@ -1,4 +1,3 @@
-use checksums::hash_file;
 use chrono::offset::Local;
 use chrono::DateTime;
 use std::fmt;
@@ -17,9 +16,6 @@ impl BamFile {
             .to_str()
             .expect("Could not convert file name to string")
             .to_string()
-    }
-    pub fn checksum(&self) -> String {
-        hash_file(Path::new(&self.path), checksums::Algorithm::MD5)
     }
 
     pub fn file_time(&self) -> String {

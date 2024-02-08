@@ -37,7 +37,7 @@ pub struct Cli {
     #[clap(long, value_parser)]
     hist: bool,
 
-    /// If a checksum has to be calculated
+    /// If a checksum has to be calculated [DEPRECATED]
     #[clap(long, value_parser)]
     checksum: bool,
 
@@ -87,6 +87,11 @@ fn main() -> Result<(), rust_htslib::errors::Error> {
         args.phased = false;
         args.spliced = false;
     };
+    if args.checksum {
+        eprintln!(
+            "Calculating a checksum is deprecated, let me you if you disagree and want it back"
+        );
+    }
     info!("Collected arguments");
     let (metrics, header) = extract_from_bam::extract(&args);
 
@@ -113,9 +118,6 @@ fn metrics_from_bam(
 
     println!("Path\t{}", bam);
     println!("Creation time\t{}", bam.file_time());
-    if args.checksum {
-        println!("Checksum\t{}", bam.checksum());
-    }
 
     let phaseblocks = if args.phased {
         Some(phased::phase_metrics(
@@ -214,7 +216,7 @@ fn extract() {
         reference: None,
         min_read_len: 0,
         hist: true,
-        checksum: true,
+        checksum: false,
         arrow: Some("test.feather".to_string()),
         karyotype: true,
         phased: true,
