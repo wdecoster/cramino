@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.13.1"
+version = "0.14.0"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -15,17 +15,19 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 clap = { version = "4.4.7", features = ["derive"] }
-rust-htslib = "0.44.1"
+rust-htslib = "0.45.0"
 log = "0.4.0"
-env_logger = "0.10.0"
+env_logger = "0.11.1"
 checksums = "0.9.1"
 chrono = "0.4.22"
 rayon = "1.5.3"
-arrow = "48.0.0"
+arrow = "50.0.0"
 unzip-n = "0.1.2"
-itertools = "0.11.0"
+itertools = "0.12.1"
 
 libz-sys = "1.1.12"
+url = "2.5.0"
+hts-sys = "2.1.1"
 
 [dev-dependencies]
 ctor = "0.2.4"

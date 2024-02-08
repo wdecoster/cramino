@@ -1,6 +1,8 @@
 use bam::ext::BamRecordExtensions;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read, htslib};
+use std::env;
+use url::Url;
 
 pub struct Data {
     pub lengths: Option<Vec<u128>>,
@@ -23,19 +25,41 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     let mut exons = vec![];
     let mut bam = if args.input == "-" {
         bam::Reader::from_stdin().expect("\n\nError reading alignments from stdin.\nDid you include the file header with -h?\n\n\n\n")
+    } else if args.input.starts_with("s3") || args.input.starts_with("https://") {
+        if env::var("CURL_CA_BUNDLE").is_err() {
+            env::set_var("CURL_CA_BUNDLE", "/etc/ssl/certs/ca-certificates.crt");
+        }
+        bam::Reader::from_url(&Url::parse(&args.input).expect("Failed to parse URL"))
+            .unwrap_or_else(|err| panic!("Error opening remote BAM: {err}"))
     } else {
         bam::Reader::from_path(&args.input)
             .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
     };
+    if args.input.ends_with(".cram") & args.reference.is_some() {
+        // bam.set_cram_option(htslib::CFR_REQUIRED_FIELDS, htslib::sam_fields_SAM_AUX as i32)
+        //     .expect("Failed setting cram options");
+        bam.set_reference(
+            args.reference
+                .as_ref()
+                .expect("Failed setting reference for CRAM file"),
+        )
+        .expect("Failed setting reference for CRAM file");
+    }
+    if args.input.ends_with(".cram") {
+        bam.set_cram_options(
+            hts_sys::hts_fmt_option_CRAM_OPT_REQUIRED_FIELDS,
+            hts_sys::sam_fields_SAM_AUX
+                | hts_sys::sam_fields_SAM_MAPQ
+                | hts_sys::sam_fields_SAM_CIGAR
+                | hts_sys::sam_fields_SAM_SEQ,
+        )
+        .expect("Failed setting cram options");
+    }
     let header = bam.header().clone();
     let header = rust_htslib::bam::Header::from_template(&header);
     bam.set_threads(args.threads)
         .expect("Failure setting decompression threads");
 
-    if let Some(s) = &args.reference {
-        bam.set_reference(s)
-            .expect("Failure setting bam/cram reference");
-    }
     let min_read_len = args.min_read_len;
     // the match statement below is a bit ugly, but it is the only way to get a closure
     // that closure is used for filtering the reads

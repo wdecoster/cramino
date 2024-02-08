@@ -13,9 +13,9 @@ impl BamFile {
     pub fn file_name(&self) -> String {
         Path::new(&self.path)
             .file_name()
-            .unwrap()
+            .expect("Could not get file name")
             .to_str()
-            .unwrap()
+            .expect("Could not convert file name to string")
             .to_string()
     }
     pub fn checksum(&self) -> String {
@@ -23,11 +23,18 @@ impl BamFile {
     }
 
     pub fn file_time(&self) -> String {
-        if self.path == "-" {
+        if self.path == "-"
+            || self.path.starts_with("http")
+            || self.path.starts_with("ftp")
+            || self.path.starts_with("s3")
+        {
             return "NA".to_string();
         }
         let metadata = fs::metadata(&self.path);
-        if let Ok(time) = metadata.unwrap().created() {
+        if let Ok(time) = metadata
+            .expect("Failed to extract metadata from file")
+            .created()
+        {
             let datetime: DateTime<Local> = time.into();
             format!("{}", datetime.format("%d/%m/%Y %T"))
         } else {

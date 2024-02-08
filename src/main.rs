@@ -63,7 +63,11 @@ pub struct Cli {
 }
 
 pub fn is_file(pathname: &str) -> Result<(), String> {
-    if pathname == "-" {
+    if pathname == "-"
+        || pathname.starts_with("http")
+        || pathname.starts_with("ftp")
+        || pathname.starts_with("s3")
+    {
         return Ok(());
     }
     let path = PathBuf::from(pathname);
@@ -182,6 +186,11 @@ fn generate_main_output(
             "Mean identity\t{:.2}",
             identities.iter().sum::<f64>() / (num_reads as f64)
         );
+        // modal accuracy has lower precision because it gets inflated and divided by 10, losing everything after the first decimal
+        println!(
+            "Modal identity\t{:.1}",
+            calculations::modal_accuracy(identities)
+        );
     }
 }
 
@@ -216,6 +225,27 @@ fn extract() {
     assert!(metrics_from_bam(metrics, args, header).is_ok())
 }
 
+// this test is ignored because it uses a local reference file
+#[ignore]
+#[test]
+fn extract_cram() {
+    let args = Cli {
+        input: "test-data/small-test-phased.cram".to_string(),
+        threads: 8,
+        reference: Some("/home/wdecoster/reference/GRCh38.fa".to_string()),
+        min_read_len: 0,
+        hist: false,
+        checksum: false,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_from_bam(metrics, args, header).is_ok())
+}
+
 #[test]
 fn extract_ubam() {
     let args = Cli {
@@ -230,6 +260,27 @@ fn extract_ubam() {
         phased: false,
         spliced: false,
         ubam: true,
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_from_bam(metrics, args, header).is_ok())
+}
+
+// this test is ignored because it uses a local reference file and takes a very long time
+#[ignore]
+#[test]
+fn extract_url() {
+    let args = Cli {
+        input: "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1KG_ONT_VIENNA/hg38/HG00096.hg38.cram".to_string(),
+        threads: 8,
+        reference: Some("/home/wdecoster/local/1KG_ONT_VIENNA_hg38.fa.gz".to_string()),
+        min_read_len: 0,
+        hist: true,
+        checksum: false,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_from_bam(metrics, args, header).is_ok())
