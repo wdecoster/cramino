@@ -130,7 +130,7 @@ fn metrics_from_bam(
         None
     };
     if args.karyotype {
-        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), bam.to_string());
+        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), header);
     }
     let exon_counts = if let Some(mut exon_counts) = metrics.exons {
         exon_counts.sort_unstable();
