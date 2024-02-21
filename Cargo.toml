@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.14.2"
+version = "0.14.3"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
