@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.14.3"
+version = "0.14.4"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -15,7 +15,7 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 clap = { version = "4.4.7", features = ["derive"] }
-rust-htslib = "0.45.0"
+rust-htslib = "0.46.0"
 log = "0.4.0"
 env_logger = "0.11.1"
 chrono = "0.4.22"

@@ -202,6 +202,20 @@ fn get_phaseset(record: &bam::Record) -> Option<u32> {
             Aux::U8(v) => Some(u32::from(v)),
             Aux::U16(v) => Some(u32::from(v)),
             Aux::U32(v) => Some(v),
+            Aux::I8(v) => Some(u32::try_from(v).unwrap_or_else(|_| {
+                panic!(
+                    "Invalid: Identified a negative PS tag at {}",
+                    std::str::from_utf8(record.qname())
+                        .expect("Failed to convert read name to string")
+                )
+            })),
+            Aux::I16(v) => Some(u32::try_from(v).unwrap_or_else(|_| {
+                panic!(
+                    "Invalid: Identified a negative PS tag at {}",
+                    std::str::from_utf8(record.qname())
+                        .expect("Failed to convert read name to string")
+                )
+            })),
             Aux::I32(v) => Some(u32::try_from(v).unwrap_or_else(|_| {
                 panic!(
                     "Invalid: Identified a negative PS tag at {}",

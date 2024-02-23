@@ -472,7 +472,7 @@ checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
 
 [[package]]
 name = "cramino"
-version = "0.14.3"
+version = "0.14.4"
 dependencies = [
  "arrow",
  "chrono",
@@ -1105,9 +1105,9 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "rust-htslib"
-version = "0.45.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea99084ac4f6f7caff758be2f0dd4718d3e582a735f75bd5957f9c49f5802f8"
+checksum = "aec6f9ca4601beb4ae75ff8c99144dd15de5a873f6adf058da299962c760968e"
 dependencies = [
  "bio-types",
  "byteorder",
@@ -1117,6 +1117,7 @@ dependencies = [
  "ieee754",
  "lazy_static",
  "libc",
+ "libz-sys",
  "linear-map",
  "newtype_derive",
  "regex",
