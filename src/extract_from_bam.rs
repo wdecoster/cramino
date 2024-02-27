@@ -66,14 +66,16 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     // the closure is different depending on inclusion of unmapped reads (--ubam) and the minimum read length (--min-read-len)
     let filter_closure: Box<dyn Fn(&bam::Record) -> bool> = match (args.ubam, args.min_read_len) {
         (false, 0) => Box::new(|record: &bam::Record| {
+            // filter out unmapped and secondary reads, no length filter
             record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
         }),
         (false, l) if l > 0 => Box::new(|record: &bam::Record| {
+            // filter out unmapped and secondary reads, with a length filter
             record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
                 && record.seq_len() > min_read_len
         }),
-        (true, 0) => Box::new(|_: &bam::Record| true),
-        (true, l) if l > 0 => Box::new(|record: &bam::Record| record.seq_len() > min_read_len),
+        (true, 0) => Box::new(|_: &bam::Record| true), // include all reads without a length filter
+        (true, l) if l > 0 => Box::new(|record: &bam::Record| record.seq_len() > min_read_len), // only a length filter
         // the pattern below should be unreachable, as the min_read_len is either zero or positive
         (false, _) | (true, _) => unreachable!(),
     };
@@ -176,6 +178,8 @@ fn get_nm_tag(record: &bam::Record) -> u32 {
             Aux::U8(v) => u32::from(v),
             Aux::U16(v) => u32::from(v),
             Aux::U32(v) => v,
+            Aux::I8(v) => u32::try_from(v).expect("Identified a negative NM tag"),
+            Aux::I16(v) => u32::try_from(v).expect("Identified a negative NM tag"),
             Aux::I32(v) => u32::try_from(v).expect("Identified a negative NM tag"),
             _ => panic!("Unexpected type of Aux for NM tag: {:?}", value),
         },
