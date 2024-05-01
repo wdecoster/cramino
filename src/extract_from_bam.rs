@@ -74,8 +74,15 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
                 && record.seq_len() > min_read_len
         }),
-        (true, 0) => Box::new(|_: &bam::Record| true), // include all reads without a length filter
-        (true, l) if l > 0 => Box::new(|record: &bam::Record| record.seq_len() > min_read_len), // only a length filter
+        (true, 0) => Box::new(|record: &bam::Record| {
+            // filter out secondary reads, no length filter
+            record.flags() & (htslib::BAM_FSECONDARY) as u16 == 0
+        }),
+        (true, l) if l > 0 => Box::new(|record: &bam::Record| {
+            // filter out secondary reads, with a length filter
+            record.flags() & (htslib::BAM_FSECONDARY) as u16 == 0
+                && record.seq_len() > min_read_len
+        }),
         // the pattern below should be unreachable, as the min_read_len is either zero or positive
         (false, _) | (true, _) => unreachable!(),
     };
@@ -86,11 +93,8 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
-        if args.ubam {
-            lengths.push(read.seq_len() as u128);
-        } else {
-            lengths.push(read.seq_len() as u128 - softclipped_bases(&read));
-        }
+        lengths.push(read.seq_len() as u128 - softclipped_bases(&read));
+        
         if args.karyotype || args.phased {
             tids.push(read.tid());
         }
