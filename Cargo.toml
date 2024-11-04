@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.14.5"
+version = "0.15.0"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -14,15 +14,15 @@ categories = ["command-line-utilities", "science"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.4.7", features = ["derive"] }
-rust-htslib = "0.46.0"
-log = "0.4.0"
-env_logger = "0.11.1"
+clap = { version = "4.5.20", features = ["derive"] }
+rust-htslib = "0.47.0"
+log = "0.4.22"
+env_logger = "0.11.5"
 chrono = "0.4.22"
 rayon = "1.5.3"
-arrow = "50.0.0"
+arrow = "53.2.0"
 unzip-n = "0.1.2"
-itertools = "0.12.1"
+itertools = "0.13.0"
 
 libz-sys = "1.1.12"
 url = "2.5.0"
