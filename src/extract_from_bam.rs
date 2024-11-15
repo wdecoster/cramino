@@ -66,22 +66,19 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     // the closure is different depending on inclusion of unmapped reads (--ubam) and the minimum read length (--min-read-len)
     let filter_closure: Box<dyn Fn(&bam::Record) -> bool> = match (args.ubam, args.min_read_len) {
         (false, 0) => Box::new(|record: &bam::Record| {
-            // filter out unmapped and secondary reads, no length filter
-            record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
+            // filter out unmapped, no length filter
+            record.flags() & htslib::BAM_FUNMAP as u16 == 0
         }),
         (false, l) if l > 0 => Box::new(|record: &bam::Record| {
-            // filter out unmapped and secondary reads, with a length filter
-            record.flags() & (htslib::BAM_FUNMAP | htslib::BAM_FSECONDARY) as u16 == 0
+            // filter out unmapped, with a length filter
+            record.flags() & htslib::BAM_FUNMAP as u16 == 0
                 && record.seq_len() > min_read_len
         }),
-        (true, 0) => Box::new(|record: &bam::Record| {
-            // filter out secondary reads, no length filter
-            record.flags() & (htslib::BAM_FSECONDARY) as u16 == 0
-        }),
+        // keep unmapped reads, no length filter
+        (true, 0) => Box::new(|_: &bam::Record| true),
         (true, l) if l > 0 => Box::new(|record: &bam::Record| {
-            // filter out secondary reads, with a length filter
-            record.flags() & (htslib::BAM_FSECONDARY) as u16 == 0
-                && record.seq_len() > min_read_len
+            // only length filter, keep unmapped
+            record.seq_len() > min_read_len
         }),
         // the pattern below should be unreachable, as the min_read_len is either zero or positive
         (false, _) | (true, _) => unreachable!(),
@@ -90,6 +87,7 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     for read in bam
         .rc_records()
         .map(|r| r.expect("Failure parsing Bam file"))
+        .filter(|record| record.flags() & (htslib::BAM_FSECONDARY) as u16 == 0)
         .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
