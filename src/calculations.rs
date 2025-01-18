@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub fn get_n(lengths: &Vec<u128>, nb_bases_total: u128, percentile: f64) -> u128 {
+pub fn get_n(lengths: &[u128], nb_bases_total: u128, percentile: f64) -> u128 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
@@ -47,7 +47,7 @@ pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
     }
 }
 
-pub fn median_splice(array: &Vec<usize>) -> usize {
+pub fn median_splice(array: &[usize]) -> usize {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
