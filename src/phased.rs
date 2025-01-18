@@ -61,7 +61,7 @@ fn median(array: &[i64]) -> f64 {
     }
 }
 
-fn get_n50(lengths: &Vec<i64>, nb_bases_total: i64) -> i64 {
+fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;

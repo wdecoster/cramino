@@ -114,6 +114,7 @@ fn metrics_from_bam(
         metrics.identities.as_ref(),
         genome_size,
         metrics.all_counts,
+        metrics.num_reads,
     );
 
     println!("Path\t{}", bam);
@@ -155,22 +156,24 @@ fn metrics_from_bam(
 }
 
 fn generate_main_output(
-    lengths: &Vec<u128>,
+    lengths: &[u128],
     identities: Option<&Vec<f64>>,
     genome_size: u64,
-    all_reads: usize,
+    all_alignments: usize,
+    num_reads: usize,
 ) {
-    let num_reads = lengths.len();
+    let num_alignments = lengths.len();
     if num_reads < 2 {
-        error!("Not enough reads to calculate metrics!");
+        error!("Not enough alignments to calculate metrics!");
         panic!();
     }
     let data_yield: u128 = lengths.iter().sum::<u128>();
-    println!("Number of alignments\t{num_reads}");
+    println!("Number of alignments\t{num_alignments}");
     println!(
-        "% from total reads\t{:.2}",
-        (num_reads as f64) / (all_reads as f64) * 100.0
+        "% from total alignments\t{:.2}",
+        (num_reads as f64) / (all_alignments as f64) * 100.0
     );
+    println!("Number of reads\t{num_reads}");
     println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
     println!(
         "Mean coverage\t{:.2}",

@@ -1,4 +1,4 @@
-pub fn splice_metrics(exon_counts: &Vec<usize>) {
+pub fn splice_metrics(exon_counts: &[usize]) {
     let num_reads = exon_counts.len();
     println!(
         "Median number of exons\t{:.2}",

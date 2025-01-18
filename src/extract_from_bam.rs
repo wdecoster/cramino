@@ -6,6 +6,7 @@ use url::Url;
 
 pub struct Data {
     pub lengths: Option<Vec<u128>>,
+    pub num_reads: usize,
     pub all_counts: usize,
     pub identities: Option<Vec<f64>>,
     pub tids: Option<Vec<i32>>,
@@ -17,6 +18,7 @@ pub struct Data {
 
 pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     let mut lengths = vec![];
+    let mut num_reads = 0;
     let mut identities = vec![];
     let mut tids = vec![];
     let mut starts = vec![];
@@ -92,7 +94,9 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         .filter(|read| filter_closure(read))
     {
         lengths.push(read.seq_len() as u128 - softclipped_bases(&read));
-        
+        if !read.is_supplementary() {
+            num_reads += 1;
+        }
         if args.karyotype || args.phased {
             tids.push(read.tid());
         }
@@ -121,12 +125,14 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             ),
         }
     }
+
     // sort vectors in descending order (required for N50/N75)
     lengths.sort_unstable_by(|a, b| b.cmp(a));
     identities.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     (
         Data {
             lengths: Some(lengths),
+            num_reads,
             all_counts,
             identities: if !args.ubam { Some(identities) } else { None },
             tids: if args.karyotype || args.phased {
