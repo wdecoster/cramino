@@ -1,6 +1,6 @@
 [package]
 name = "cramino"
-version = "0.16.0"
+version = "0.17.0"
 edition = "2021"
 authors = ["Wouter De Coster decosterwouter@gmail.com"]
 license = "MIT"
@@ -14,17 +14,17 @@ categories = ["command-line-utilities", "science"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.26", features = ["derive"] }
+clap = { version = "4.5.32", features = ["derive"] }
 rust-htslib = "0.49.0"
-log = "0.4.25"
-env_logger = "0.11.6"
-chrono = "0.4.22"
+log = "0.4.26"
+env_logger = "0.11.7"
+chrono = "0.4.22" # bumping this seems to break things
 rayon = "1.5.3"
-arrow = "54.0.0"
+arrow = "54.2.1"
 unzip-n = "0.1.2"
 itertools = "0.14.0"
 
-libz-sys = "1.1.21"
+libz-sys = "1.1.22"
 url = "2.5.3"
 hts-sys = "2.1.1"
 

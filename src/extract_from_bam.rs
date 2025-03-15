@@ -3,6 +3,7 @@ use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read, htslib};
 use std::env;
 use url::Url;
+use rayon::prelude::*;
 
 pub struct Data {
     pub lengths: Option<Vec<u128>>,
@@ -116,19 +117,19 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         match args.ubam {
             true => crate::feather::save_as_arrow_ubam(
                 s.to_string(),
-                lengths.clone().iter().map(|x| *x as u64).collect(),
+                lengths.iter().map(|x| *x as u64).collect(),
             ),
             false => crate::feather::save_as_arrow(
                 s.to_string(),
-                lengths.clone().iter().map(|x| *x as u64).collect(),
+                lengths.iter().map(|x| *x as u64).collect(),
                 identities.clone(),
             ),
         }
     }
 
     // sort vectors in descending order (required for N50/N75)
-    lengths.sort_unstable_by(|a, b| b.cmp(a));
-    identities.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
+    lengths.par_sort_unstable_by(|a, b| b.cmp(a));
+    identities.par_sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     (
         Data {
             lengths: Some(lengths),

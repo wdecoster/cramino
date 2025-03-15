@@ -167,7 +167,10 @@ fn generate_main_output(
         error!("Not enough alignments to calculate metrics!");
         panic!();
     }
-    let data_yield: u128 = lengths.iter().sum::<u128>();
+    let (data_yield, data_yield_long) = lengths.iter().fold((0u128, 0u128), |(total, long), &len| {
+        let long_increment = if len > 25000 { len } else { 0 };
+        (total + len, long + long_increment)
+    });
     println!("Number of alignments\t{num_alignments}");
     println!(
         "% from total alignments\t{:.2}",
@@ -179,17 +182,16 @@ fn generate_main_output(
         "Mean coverage\t{:.2}",
         data_yield as f64 / genome_size as f64
     );
-    let data_yield_long = lengths.iter().filter(|l| l > &&25000).sum::<u128>();
     println!("Yield [Gb] (>25kb)\t{:.2}", data_yield_long as f64 / 1e9);
     println!("N50\t{}", calculations::get_n(lengths, data_yield, 0.50));
     println!("N75\t{}", calculations::get_n(lengths, data_yield, 0.75));
     println!("Median length\t{:.2}", calculations::median_length(lengths));
-    println!("Mean length\t{:.2}", data_yield / num_reads as u128);
+    println!("Mean length\t{:.2}", data_yield / lengths.len() as u128);
     if let Some(identities) = identities {
         println!("Median identity\t{:.2}", calculations::median(identities));
         println!(
             "Mean identity\t{:.2}",
-            identities.iter().sum::<f64>() / (num_reads as f64)
+            identities.iter().sum::<f64>() / ( identities.len() as f64)
         );
         // modal accuracy has lower precision because it gets inflated and divided by 10, losing everything after the first decimal
         println!(
