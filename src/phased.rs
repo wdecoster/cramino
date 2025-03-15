@@ -51,7 +51,7 @@ pub fn phase_metrics(
     phaseblocks
 }
 
-fn median(array: &[i64]) -> f64 {
+pub fn median(array: &[i64]) -> f64 {
     if (array.len() % 2) == 0 {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
@@ -61,7 +61,7 @@ fn median(array: &[i64]) -> f64 {
     }
 }
 
-fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
+pub fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;

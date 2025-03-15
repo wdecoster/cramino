@@ -537,6 +537,8 @@ dependencies = [
  "log",
  "rayon",
  "rust-htslib",
+ "serde",
+ "serde_json",
  "unzip-n",
  "url",
 ]
