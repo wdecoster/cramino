@@ -1,16 +1,18 @@
 use clap::Parser;
-use extract_from_bam::Data;
-use log::{error, info};
-use std::path::PathBuf;
+use log::info;
+use metrics_processor::OutputFormat;  // Import the enum
 
 pub mod calculations;
 pub mod extract_from_bam;
 pub mod feather;
 pub mod file_info;
 pub mod histograms;
-pub mod karyotype;
+pub mod metrics;
+pub mod metrics_processor;
 pub mod phased;
 pub mod splicing;
+pub mod text_output;
+pub mod tsv_output;
 pub mod utils;
 
 // The arguments end up in the Cli struct
@@ -37,10 +39,6 @@ pub struct Cli {
     #[clap(long, value_parser)]
     hist: bool,
 
-    /// If a checksum has to be calculated [DEPRECATED]
-    #[clap(long, value_parser)]
-    checksum: bool,
-
     /// Write data to an arrow format file
     #[clap(long, value_parser)]
     arrow: Option<String>,
@@ -60,146 +58,29 @@ pub struct Cli {
     /// Provide metrics for unaligned reads
     #[clap(long, value_parser)]
     ubam: bool,
+
+    /// Output format (text, json, or tsv)
+    #[clap(long, value_parser, default_value_t = OutputFormat::Text)]
+    format: OutputFormat,
 }
 
-pub fn is_file(pathname: &str) -> Result<(), String> {
-    if pathname == "-"
-        || pathname.starts_with("http")
-        || pathname.starts_with("ftp")
-        || pathname.starts_with("s3")
-    {
-        return Ok(());
-    }
-    let path = PathBuf::from(pathname);
-    if path.is_file() {
-        Ok(())
-    } else {
-        Err(format!("Input file {} is invalid", path.display()))
-    }
-}
-
-fn main() -> Result<(), rust_htslib::errors::Error> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let mut args = Cli::parse();
-    is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
+    utils::is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
     if args.ubam {
         args.karyotype = false;
         args.phased = false;
         args.spliced = false;
     };
-    if args.checksum {
-        eprintln!(
-            "Calculating a checksum is deprecated, let me you if you disagree and want it back"
-        );
-    }
     info!("Collected arguments");
     let (metrics, header) = extract_from_bam::extract(&args);
-
-    metrics_from_bam(metrics, args, header)?;
+    info!("Extracted metrics");
+    metrics_processor::process_metrics(metrics, &args, header)?;
     info!("Finished");
     Ok(())
 }
 
-fn metrics_from_bam(
-    metrics: Data,
-    args: Cli,
-    header: rust_htslib::bam::Header,
-) -> Result<(), rust_htslib::errors::Error> {
-    let bam = file_info::BamFile { path: args.input };
-    println!("File name\t{}", bam.file_name());
-
-    let genome_size = utils::get_genome_size(&header)?;
-    generate_main_output(
-        metrics.lengths.as_ref().unwrap(),
-        metrics.identities.as_ref(),
-        genome_size,
-        metrics.all_counts,
-        metrics.num_reads,
-    );
-
-    println!("Path\t{}", bam);
-    println!("Creation time\t{}", bam.file_time());
-
-    let phaseblocks = if args.phased {
-        Some(phased::phase_metrics(
-            metrics.tids.as_ref().unwrap(),
-            metrics.starts.unwrap(),
-            metrics.ends.unwrap(),
-            metrics.phasesets.as_ref().unwrap(),
-        ))
-    } else {
-        None
-    };
-    if args.karyotype {
-        karyotype::make_karyotype(metrics.tids.as_ref().unwrap(), header);
-    }
-    let exon_counts = if let Some(mut exon_counts) = metrics.exons {
-        exon_counts.sort_unstable();
-        splicing::splice_metrics(&exon_counts);
-        exon_counts
-    } else {
-        Vec::new()
-    };
-    if args.hist {
-        histograms::make_histogram_lengths(metrics.lengths.as_ref().unwrap());
-        if !args.ubam {
-            histograms::make_histogram_identities(metrics.identities.as_ref().unwrap());
-        }
-        if args.phased {
-            histograms::make_histogram_phaseblocks(&phaseblocks.unwrap())
-        }
-        if args.spliced {
-            histograms::make_histogram_exons(&exon_counts);
-        }
-    }
-    Ok(())
-}
-
-fn generate_main_output(
-    lengths: &[u128],
-    identities: Option<&Vec<f64>>,
-    genome_size: u64,
-    all_alignments: usize,
-    num_reads: usize,
-) {
-    let num_alignments = lengths.len();
-    if num_reads < 2 {
-        error!("Not enough alignments to calculate metrics!");
-        panic!();
-    }
-    let (data_yield, data_yield_long) = lengths.iter().fold((0u128, 0u128), |(total, long), &len| {
-        let long_increment = if len > 25000 { len } else { 0 };
-        (total + len, long + long_increment)
-    });
-    println!("Number of alignments\t{num_alignments}");
-    println!(
-        "% from total alignments\t{:.2}",
-        (num_reads as f64) / (all_alignments as f64) * 100.0
-    );
-    println!("Number of reads\t{num_reads}");
-    println!("Yield [Gb]\t{:.2}", data_yield as f64 / 1e9);
-    println!(
-        "Mean coverage\t{:.2}",
-        data_yield as f64 / genome_size as f64
-    );
-    println!("Yield [Gb] (>25kb)\t{:.2}", data_yield_long as f64 / 1e9);
-    println!("N50\t{}", calculations::get_n(lengths, data_yield, 0.50));
-    println!("N75\t{}", calculations::get_n(lengths, data_yield, 0.75));
-    println!("Median length\t{:.2}", calculations::median_length(lengths));
-    println!("Mean length\t{:.2}", data_yield / lengths.len() as u128);
-    if let Some(identities) = identities {
-        println!("Median identity\t{:.2}", calculations::median(identities));
-        println!(
-            "Mean identity\t{:.2}",
-            identities.iter().sum::<f64>() / ( identities.len() as f64)
-        );
-        // modal accuracy has lower precision because it gets inflated and divided by 10, losing everything after the first decimal
-        println!(
-            "Modal identity\t{:.1}",
-            calculations::modal_accuracy(identities)
-        );
-    }
-}
 
 #[cfg(test)]
 #[ctor::ctor]
@@ -221,15 +102,15 @@ fn extract() {
         reference: None,
         min_read_len: 0,
         hist: true,
-        checksum: false,
         arrow: Some("test.feather".to_string()),
         karyotype: true,
         phased: true,
         spliced: false,
         ubam: false,
+        format: OutputFormat::Text,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
-    assert!(metrics_from_bam(metrics, args, header).is_ok())
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
 
 // this test is ignored because it uses a local reference file
@@ -242,15 +123,15 @@ fn extract_cram() {
         reference: Some("/home/wdecoster/reference/GRCh38.fa".to_string()),
         min_read_len: 0,
         hist: false,
-        checksum: false,
         arrow: None,
         karyotype: false,
         phased: false,
         spliced: false,
         ubam: false,
+        format: OutputFormat::Text,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
-    assert!(metrics_from_bam(metrics, args, header).is_ok())
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
 
 #[test]
@@ -261,15 +142,15 @@ fn extract_ubam() {
         reference: None,
         min_read_len: 0,
         hist: true,
-        checksum: false,
         arrow: Some("test.feather".to_string()),
         karyotype: false,
         phased: false,
         spliced: false,
         ubam: true,
+        format: OutputFormat::Text,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
-    assert!(metrics_from_bam(metrics, args, header).is_ok())
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
 
 // this test is ignored because it uses a local reference file and takes a very long time
@@ -282,13 +163,32 @@ fn extract_url() {
         reference: Some("/home/wdecoster/local/1KG_ONT_VIENNA_hg38.fa.gz".to_string()),
         min_read_len: 0,
         hist: true,
-        checksum: false,
         arrow: None,
         karyotype: false,
         phased: false,
         spliced: false,
         ubam: false,
+        format: OutputFormat::Text,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
-    assert!(metrics_from_bam(metrics, args, header).is_ok())
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
+}
+
+#[test]
+fn extract_json() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: false,
+        arrow: None,
+        karyotype: true,
+        phased: true,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Json,
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
