@@ -7,7 +7,6 @@ pub fn phase_metrics(
     ends: Vec<i64>,
     phasesets: &Vec<Option<u32>>,
 ) -> Vec<i64> {
-    let num_reads = phasesets.len();
     let mut phased_reads = izip!(tids, starts, ends, phasesets)
         .filter(|(_, _, _, p)| p.is_some())
         .collect::<Vec<_>>();
@@ -35,19 +34,6 @@ pub fn phase_metrics(
         }
     }
     phaseblocks.push(block_end - start1);
-
-    println!(
-        "Fraction reads phased\t{}",
-        (num_phased_reads as f32) / (num_reads as f32)
-    );
-    println!("Number of phaseblocks\t{}", phaseblocks.len());
-    let phased_bases = phaseblocks.iter().sum::<i64>();
-    println!("Total bases phased [Gb]\t{}", phased_bases as f64 / 1e9);
-    println!("Median phaseblock length\t{}", median(&phaseblocks));
-    println!(
-        "N50 phaseblock length\t{}",
-        get_n50(&phaseblocks, phased_bases)
-    );
     phaseblocks
 }
 
