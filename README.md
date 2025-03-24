@@ -32,6 +32,7 @@ Options:
       --phased                       Calculate metrics for phased reads
       --spliced                      Provide metrics for spliced data
       --ubam                         Provide metrics for unaligned reads
+      --format <FORMAT>              Output format (text, json, or tsv) [default: text]      
   -h, --help                         Print help
   -V, --version                      Print version
 ```
