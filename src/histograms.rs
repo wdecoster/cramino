@@ -1,5 +1,9 @@
 use itertools::Itertools;
 use std::cmp::max;
+use std::io::{self, Write};
+use std::fs::File;
+
+use crate::extract_from_bam;
 
 // the histograms below are fully defined by the step size and the maximum value
 // the step size is the size of each bin
@@ -10,7 +14,7 @@ use std::cmp::max;
 // as well as for future customizations
 // in principle it would be possible to enable the user to change the step size or max value, but I don't want to add too many options to the CLI
 
-pub fn make_histogram_lengths(array: &[u128]) {
+fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W) {
     // dynamically set the maximum value based on the maximum read length, capped at 60k
     let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
     let max_value = std::cmp::min(
@@ -34,10 +38,11 @@ pub fn make_histogram_lengths(array: &[u128]) {
     // the dotsize variable determines how many reads are represented by a single dot
     let dotsize = max(array.len() / 500, 1);
     
-    println!("\n\n# Histogram for read lengths:");
+    writeln!(writer, "\n\n# Histogram for read lengths:").expect("Unable to write histogram");
     // print every entry in the vector
-    for (index, entry) in counts.iter().dropping_back(1).enumerate() {
-        println!(
+    for (index, entry) in counts.iter().enumerate() {
+        writeln!(
+            writer,
             "{: >11} {}",
             format!(
                 "{}-{}",
@@ -45,20 +50,21 @@ pub fn make_histogram_lengths(array: &[u128]) {
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
-        );
+        ).expect("Unable to write histogram");
     }
     
     // Only print the overflow bin if there are actually overflow reads
     if overflow > 0 {
-        println!(
+        writeln!(
+            writer,
             "{: >11} {}",
             format!("{}+", max_value),
             "∎".repeat(overflow / dotsize)
-        );
+        ).expect("Unable to write histogram");
     }
 }
 
-pub fn make_histogram_identities(array: &[f64]) {
+fn make_histogram_identities<W: Write>(array: &[f64], writer: &mut W) {
     let stepsize: u64 = 1;
     let max_value = 40;
     let step_count = max_value / stepsize as usize;
@@ -73,10 +79,11 @@ pub fn make_histogram_identities(array: &[f64]) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = max(array.len() / 500, 1);
-    println!("\n\n# Histogram for Phred-scaled accuracies:");
+    writeln!(writer, "\n\n# Histogram for Phred-scaled accuracies:").expect("Unable to write histogram");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
-        println!(
+        writeln!(
+            writer,
             "{: >6} {}",
             format!(
                 "Q{}-{}",
@@ -84,16 +91,17 @@ pub fn make_histogram_identities(array: &[f64]) {
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
-        );
+        ).expect("Unable to write histogram");
     }
-    println!(
+    writeln!(
+        writer,
         "{: >6} {}",
         format!("Q{}+", (counts.len() - 1) * stepsize as usize),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    );
+    ).expect("Unable to write histogram");
 }
 
-pub fn make_histogram_phaseblocks(array: &[i64]) {
+pub fn make_histogram_phaseblocks<W: Write>(array: &[i64], writer: &mut W) {
     // this is a tricky one, as the scale of the length of phaseblocks is hard to predict
     // I may have to increase its max value in the future
     // this configuration seemed sufficient for a randomly picked test file phased with LongShot
@@ -113,10 +121,11 @@ pub fn make_histogram_phaseblocks(array: &[i64]) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = max(array.len() / 500, 1);
-    println!("\n\n# Histogram for phaseblock lengths:");
+    writeln!(writer, "\n\n# Histogram for phaseblock lengths:").expect("Unable to write histogram");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
-        println!(
+        writeln!(
+            writer,
             "{: >14} {}",
             format!(
                 "{}-{}",
@@ -124,16 +133,17 @@ pub fn make_histogram_phaseblocks(array: &[i64]) {
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
-        );
+        ).expect("Unable to write histogram");
     }
-    println!(
+    writeln!(
+        writer,
         "{: >14} {}",
         format!("{}+", (counts.len() - 1) * stepsize as usize),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    );
+    ).expect("Unable to write histogram");
 }
 
-pub fn make_histogram_exons(array: &[usize]) {
+fn make_histogram_exons<W: Write>(array: &[usize], writer: &mut W) {
     let max_value = 15;
     let step_count = max_value;
     let mut counts = vec![0; step_count + 1];
@@ -147,25 +157,58 @@ pub fn make_histogram_exons(array: &[usize]) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = max(array.len() / 500, 1);
-    println!("\n\n# Histogram for number of exons:");
+    writeln!(writer, "\n\n# Histogram for number of exons:").expect("Unable to write histogram");
     // print the second entry in the vector. The first entry is 0 exons, which is not used (empty)
     // 1 exon is renamed to unspliced
-    println!(
+    writeln!(
+        writer,
         "{: >9} {}",
         format!("unspliced"),
         "∎".repeat(counts[1] / dotsize)
-    );
+    ).expect("Unable to write histogram");
     // print every entry in the vector, except the first two (first one empty, and second one already done) and last one (done later)
     for (index, entry) in counts.iter().skip(2).dropping_back(1).enumerate() {
-        println!(
+        writeln!(
+            writer,
             "{: >9} {}",
             format!("{} exons", (index + 2)),
             "∎".repeat(entry / dotsize)
-        );
+        ).expect("Unable to write histogram");
     }
-    println!(
+    writeln!(
+        writer,
         "{: >9} {}",
         format!("{}+ exons", (counts.len() - 1)),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    );
+    ).expect("Unable to write histogram");
+}
+
+pub fn create_histograms(
+    metrics_data: &extract_from_bam::Data,
+    hist_file: &Option<String>,
+    phaseblocks: Option<Vec<i64>>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut writer: Box<dyn Write> = if let Some(file) = hist_file {
+        Box::new(File::create(file)?)
+    } else {
+        Box::new(io::stdout())
+    };
+    
+    if let Some(lengths) = &metrics_data.lengths {
+        make_histogram_lengths(lengths, &mut writer);
+    }
+    
+    if let Some(identities) = &metrics_data.identities {
+        make_histogram_identities(identities, &mut writer);
+    }
+    
+    if let Some(phaseblocks) = phaseblocks {
+        make_histogram_phaseblocks(&phaseblocks, &mut writer);
+    }
+    
+    if let Some(exons) = &metrics_data.exons {
+        make_histogram_exons(exons, &mut writer);
+    }
+    
+    Ok(())
 }

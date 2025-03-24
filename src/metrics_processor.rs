@@ -142,7 +142,7 @@ pub fn process_metrics(
     }
 
     // Add phase metrics if available
-    if args.phased {
+    let phaseblocks = if args.phased {
         let phaseblocks = phased::phase_metrics(
             metrics_data.tids.as_ref().expect("TIDs data is missing"),
             metrics_data.starts.clone().expect("Starts data is missing"),
@@ -168,7 +168,10 @@ pub fn process_metrics(
                 n50_phaseblock_length: phased::get_n50(&phaseblocks, phased_bases),
             });
         }
-    }
+        Some(phaseblocks)
+    } else {
+        None
+    };
 
     // Add karyotype data if requested
     if args.karyotype {
@@ -217,43 +220,31 @@ pub fn process_metrics(
         });
     }
 
-    // Determine output format
-    let output_format = args.format;
-
     // Output based on selected format
-    match output_format {
+    match args.format {
         OutputFormat::Text => {
             // Print text output using the collected metrics
             crate::text_output::print_text_output(&metrics_obj);
 
-            // Generate histograms if requested
-            if args.hist {
-                histograms::make_histogram_lengths(lengths);
-
-                if !args.ubam && metrics_data.identities.is_some() {
-                    histograms::make_histogram_identities(metrics_data.identities.as_ref().unwrap());
-                }
-
-                if args.phased && metrics_obj.phase_stats.is_some() {
-                    let phaseblocks = phased::phase_metrics(
-                        metrics_data.tids.as_ref().unwrap(),
-                        metrics_data.starts.unwrap(),
-                        metrics_data.ends.unwrap(),
-                        metrics_data.phasesets.as_ref().unwrap(),
-                    );
-                    histograms::make_histogram_phaseblocks(&phaseblocks);
-                }
-
-                if args.spliced && metrics_data.exons.is_some() {
-                    histograms::make_histogram_exons(metrics_data.exons.as_ref().unwrap());
-                }
+            if let Some(hist_file) = &args.hist {
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
             }
         }
         OutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&metrics_obj).unwrap());
+            
+            if let Some(hist_file) = &args.hist {
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
+            }
+        
         }
+
         OutputFormat::Tsv => {
             crate::tsv_output::print_tsv_output(&metrics_obj);
+
+            if let Some(hist_file) = &args.hist {
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
+            }
         }
     }
 

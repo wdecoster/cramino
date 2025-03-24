@@ -35,9 +35,9 @@ pub struct Cli {
     #[clap(short, long, value_parser, default_value_t = 0)]
     min_read_len: usize,
 
-    /// If histograms have to be generated
-    #[clap(long, value_parser)]
-    hist: bool,
+    /// If histograms have to be generated (optionally specify output file)
+    #[clap(long, value_parser, value_name = "FILE", num_args = 0..=1)]
+    hist: Option<Option<String>>,
 
     /// Write data to an arrow format file
     #[clap(long, value_parser)]
@@ -101,7 +101,7 @@ fn extract() {
         threads: 8,
         reference: None,
         min_read_len: 0,
-        hist: true,
+        hist: Some(None),
         arrow: Some("test.feather".to_string()),
         karyotype: true,
         phased: true,
@@ -122,7 +122,7 @@ fn extract_cram() {
         threads: 8,
         reference: Some("/home/wdecoster/reference/GRCh38.fa".to_string()),
         min_read_len: 0,
-        hist: false,
+        hist: None,
         arrow: None,
         karyotype: false,
         phased: false,
@@ -141,7 +141,7 @@ fn extract_ubam() {
         threads: 8,
         reference: None,
         min_read_len: 0,
-        hist: true,
+        hist: Some(None),
         arrow: Some("test.feather".to_string()),
         karyotype: false,
         phased: false,
@@ -162,7 +162,7 @@ fn extract_url() {
         threads: 8,
         reference: Some("/home/wdecoster/local/1KG_ONT_VIENNA_hg38.fa.gz".to_string()),
         min_read_len: 0,
-        hist: true,
+        hist: Some(None),
         arrow: None,
         karyotype: false,
         phased: false,
@@ -181,13 +181,32 @@ fn extract_json() {
         threads: 8,
         reference: None,
         min_read_len: 0,
-        hist: false,
+        hist: Some(None),
         arrow: None,
         karyotype: true,
         phased: true,
         spliced: false,
         ubam: false,
         format: OutputFormat::Json,
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
+}
+
+#[test]
+fn extract_tsv() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: Some(Some("hist.txt".to_string())),
+        arrow: None,
+        karyotype: true,
+        phased: true,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Tsv,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
