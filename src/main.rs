@@ -211,3 +211,68 @@ fn extract_tsv() {
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
+
+#[test]
+fn extract_with_high_min_length() {
+    // Use a minimum read length higher than any read in the test file
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 1_000_000, // Set very high to ensure no reads match
+        hist: None,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Text,
+    };
+    
+    // The test should still run without panicking
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics.lengths.as_ref().unwrap().is_empty());
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
+}
+
+#[test]
+fn extract_json_with_high_min_length() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 1_000_000, // Set very high to ensure no reads match
+        hist: None,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Json,
+    };
+    
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics.lengths.as_ref().unwrap().is_empty());
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
+}
+
+#[test]
+fn extract_tsv_with_high_min_length() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 1_000_000, // Set very high to ensure no reads match
+        hist: None,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Tsv,
+    };
+    
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics.lengths.as_ref().unwrap().is_empty());
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
+}

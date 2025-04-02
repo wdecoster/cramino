@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
 pub fn get_n(lengths: &[u128], nb_bases_total: u128, percentile: f64) -> u128 {
+    // Handle empty array case
+    if lengths.is_empty() {
+        return 0;  // Return 0 for N50/N75 when no reads match the criteria
+    }
+    
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;

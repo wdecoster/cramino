@@ -107,6 +107,45 @@ pub fn process_metrics(
     });
 
     let lengths = metrics_data.lengths.as_ref().unwrap();
+    
+    // Check if no reads passed the filters
+    if lengths.is_empty() {
+        eprintln!("Warning: No reads pass your filtering criteria");
+        
+        // Set minimal metrics with zeros
+        metrics_obj.alignment_stats = metrics::AlignmentStats {
+            num_alignments: 0,
+            percent_from_total: 0.0,
+            num_reads: 0,
+        };
+        
+        metrics_obj.read_stats = metrics::ReadStats {
+            yield_gb: 0.0,
+            mean_coverage: 0.0,
+            yield_gb_long: 0.0,
+            n50: 0,
+            n75: 0,
+            median_length: 0.0,
+            mean_length: 0.0,
+        };
+        
+        // Output based on selected format
+        match args.format {
+            OutputFormat::Text => {
+                crate::text_output::print_text_output(&metrics_obj);
+            },
+            OutputFormat::Json => {
+                println!("{}", serde_json::to_string_pretty(&metrics_obj).unwrap());
+            },
+            OutputFormat::Tsv => {
+                crate::tsv_output::print_tsv_output(&metrics_obj);
+            },
+        }
+        
+        return Ok(());
+    }
+    
+    // Continue with normal processing if we have reads
     let num_alignments = lengths.len();
     let num_reads = metrics_data.num_reads;
     let all_alignments = metrics_data.all_counts;
