@@ -62,6 +62,10 @@ pub struct Cli {
     /// Output format (text, json, or tsv)
     #[clap(long, value_parser, default_value_t = OutputFormat::Text)]
     format: OutputFormat,
+
+    /// Scale histogram bins by total basepairs in each bin (not just read count)
+    #[clap(long, value_parser)]
+    pub scaled: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -108,6 +112,7 @@ fn extract() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Text,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -129,6 +134,7 @@ fn extract_cram() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Text,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -148,6 +154,7 @@ fn extract_ubam() {
         spliced: false,
         ubam: true,
         format: OutputFormat::Text,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -169,6 +176,7 @@ fn extract_url() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Text,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -188,6 +196,7 @@ fn extract_json() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Json,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -207,6 +216,7 @@ fn extract_tsv() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Tsv,
+        scaled: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -227,6 +237,7 @@ fn extract_with_high_min_length() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Text,
+        scaled: false,
     };
     
     // The test should still run without panicking
@@ -249,6 +260,7 @@ fn extract_json_with_high_min_length() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Json,
+        scaled: false,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);
@@ -270,6 +282,7 @@ fn extract_tsv_with_high_min_length() {
         spliced: false,
         ubam: false,
         format: OutputFormat::Tsv,
+        scaled: false,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);

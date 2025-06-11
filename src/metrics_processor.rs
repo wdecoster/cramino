@@ -264,25 +264,20 @@ pub fn process_metrics(
         OutputFormat::Text => {
             // Print text output using the collected metrics
             crate::text_output::print_text_output(&metrics_obj);
-
             if let Some(hist_file) = &args.hist {
-                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
         }
         OutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&metrics_obj).unwrap());
-            
             if let Some(hist_file) = &args.hist {
-                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
-        
         }
-
         OutputFormat::Tsv => {
             crate::tsv_output::print_tsv_output(&metrics_obj);
-
             if let Some(hist_file) = &args.hist {
-                histograms::create_histograms(&metrics_data, hist_file, phaseblocks)?;
+                histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
         }
     }

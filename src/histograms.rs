@@ -14,7 +14,7 @@ use crate::extract_from_bam;
 // as well as for future customizations
 // in principle it would be possible to enable the user to change the step size or max value, but I don't want to add too many options to the CLI
 
-fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W) {
+fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool) {
     // dynamically set the maximum value based on the maximum read length, capped at 60k
     let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
     let max_value = std::cmp::min(
@@ -24,23 +24,32 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W) {
     let stepsize: u128 = 2000;
     let step_count = max_value / stepsize as usize;
     let mut counts = vec![0; step_count];
+    let mut basepairs = vec![0u128; step_count];
     let mut overflow = 0; // Track overflow reads
-    
+    let mut overflow_bp = 0u128;
     for &value in array {
         if value >= max_value as u128 {
             overflow += 1; // Count overflow reads directly
+            overflow_bp += value;
         } else {
             let index = (value / stepsize) as usize;
             counts[index] += 1;
+            basepairs[index] += value;
         }
     }
-    
-    // the dotsize variable determines how many reads are represented by a single dot
-    let dotsize = max(array.len() / 500, 1);
-    
-    writeln!(writer, "\n\n# Histogram for read lengths:").expect("Unable to write histogram");
-    // print every entry in the vector
-    for (index, entry) in counts.iter().enumerate() {
+    let dotsize = if scaled {
+        let total_bp: u128 = basepairs.iter().sum::<u128>() + overflow_bp;
+        std::cmp::max((total_bp / 500) as usize, 1)
+    } else {
+        std::cmp::max(array.len() / 500, 1)
+    };
+    writeln!(writer, "\n\n# Histogram for read lengths:{}", if scaled { " (scaled by total basepairs)" } else { "" }).expect("Unable to write histogram");
+    for (index, (entry, bp)) in counts.iter().zip(basepairs.iter()).enumerate() {
+        let bar = if scaled {
+            "∎".repeat(((*bp as usize) / dotsize).max(0))
+        } else {
+            "∎".repeat((*entry / dotsize).max(0))
+        };
         writeln!(
             writer,
             "{: >11} {}",
@@ -49,17 +58,20 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W) {
                 index as u128 * stepsize,
                 (index + 1) * stepsize as usize
             ),
-            "∎".repeat(entry / dotsize)
+            bar
         ).expect("Unable to write histogram");
     }
-    
-    // Only print the overflow bin if there are actually overflow reads
     if overflow > 0 {
+        let bar = if scaled {
+            "∎".repeat(((overflow_bp as usize) / dotsize).max(0))
+        } else {
+            "∎".repeat((overflow / dotsize).max(0))
+        };
         writeln!(
             writer,
             "{: >11} {}",
             format!("{}+", max_value),
-            "∎".repeat(overflow / dotsize)
+            bar
         ).expect("Unable to write histogram");
     }
 }
@@ -187,28 +199,24 @@ pub fn create_histograms(
     metrics_data: &extract_from_bam::Data,
     hist_file: &Option<String>,
     phaseblocks: Option<Vec<i64>>,
+    scaled: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut writer: Box<dyn Write> = if let Some(file) = hist_file {
         Box::new(File::create(file)?)
     } else {
         Box::new(io::stdout())
     };
-    
     if let Some(lengths) = &metrics_data.lengths {
-        make_histogram_lengths(lengths, &mut writer);
+        make_histogram_lengths(lengths, &mut writer, scaled);
     }
-    
     if let Some(identities) = &metrics_data.identities {
         make_histogram_identities(identities, &mut writer);
     }
-    
     if let Some(phaseblocks) = phaseblocks {
         make_histogram_phaseblocks(&phaseblocks, &mut writer);
     }
-    
     if let Some(exons) = &metrics_data.exons {
         make_histogram_exons(exons, &mut writer);
     }
-    
     Ok(())
 }
