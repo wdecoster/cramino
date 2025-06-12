@@ -72,6 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let mut args = Cli::parse();
     utils::is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
+    check_stdin_input(&args.input);
     if args.ubam {
         args.karyotype = false;
         args.phased = false;
@@ -83,6 +84,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     metrics_processor::process_metrics(metrics, &args, header)?;
     info!("Finished");
     Ok(())
+}
+
+fn check_stdin_input(input: &str) {
+    if input == "-" {
+        eprintln!("Reading from stdin. If this is unexpected, make sure your input file is correctly specified.");
+        // Check if stdin is connected to a terminal (interactive) using std library
+        if std::io::IsTerminal::is_terminal(&std::io::stdin()) {
+            eprintln!("Warning: stdin appears to be a terminal. Did you mean to specify an input file?");
+            eprintln!("Note: If you're using --hist as the last option followed by a filename, the filename may have been interpreted as the histogram output path.");
+            eprintln!("To avoid this, either specify the input file before --hist, or use --hist=output.txt syntax.");
+        }
+    }
 }
 
 
@@ -288,4 +301,24 @@ fn extract_tsv_with_high_min_length() {
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics.lengths.as_ref().unwrap().is_empty());
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
+}
+
+#[test]
+fn extract_hist_scaled() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: Some(None),
+        arrow: Some("test.feather".to_string()),
+        karyotype: true,
+        phased: true,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Text,
+        scaled: true, // Set scaled to true for this test
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
 }
