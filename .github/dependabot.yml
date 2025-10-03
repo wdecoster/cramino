@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Enable version updates for Cargo
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Brussels"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "wdecoster"
+    assignees:
+      - "wdecoster"
+    commit-message:
+      prefix: "cargo"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+    # Group all patch updates together
+    groups:
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+    # Allow both direct and indirect dependency updates
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"

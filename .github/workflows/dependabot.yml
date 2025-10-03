@@ -1,0 +1,57 @@
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if PR is ready for auto-merge
+        id: check-pr
+        run: |
+          # Check if this is a patch or minor update
+          if echo "${{ github.event.pull_request.title }}" | grep -E "(patch|minor)" > /dev/null; then
+            echo "auto_merge=true" >> $GITHUB_OUTPUT
+          elif echo "${{ github.event.pull_request.title }}" | grep -E "^cargo: (bump|update)" > /dev/null; then
+            echo "auto_merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "auto_merge=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for status checks
+        if: steps.check-pr.outputs.auto_merge == 'true'
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-checks
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: build
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 600
+          intervalSeconds: 10
+
+      - name: Auto-merge Dependabot PRs
+        if: steps.check-pr.outputs.auto_merge == 'true' && steps.wait-for-checks.outputs.conclusion == 'success'
+        run: |
+          gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on major updates
+        if: steps.check-pr.outputs.auto_merge == 'false'
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --body "🔍 This appears to be a major version update. Please review manually before merging."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
