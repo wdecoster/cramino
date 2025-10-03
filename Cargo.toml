@@ -15,7 +15,7 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 clap = { version = "4.5.40", features = ["derive"] }
-rust-htslib = "0.49.0"
+rust-htslib = "0.50.0"
 log = "0.4.26"
 env_logger = "0.11.7"
 chrono = "0.4.22" # bumping this seems to break things
