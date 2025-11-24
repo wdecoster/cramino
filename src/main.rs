@@ -67,9 +67,9 @@ pub struct Cli {
     #[clap(long, value_parser)]
     pub scaled: bool,
 
-    /// Output histogram bin counts in TSV format to stdout
-    #[clap(long, value_parser, conflicts_with = "hist")]
-    pub hist_count: bool,
+    /// Output histogram bin counts in TSV format (optionally specify output file)
+    #[clap(long, value_parser, value_name = "FILE", num_args = 0..=1, conflicts_with = "hist")]
+    pub hist_count: Option<Option<String>>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -96,8 +96,8 @@ fn check_stdin_input(input: &str) {
         // Check if stdin is connected to a terminal (interactive) using std library
         if std::io::IsTerminal::is_terminal(&std::io::stdin()) {
             eprintln!("Warning: stdin appears to be a terminal. Did you mean to specify an input file?");
-            eprintln!("Note: If you're using --hist as the last option followed by a filename, the filename may have been interpreted as the histogram output path.");
-            eprintln!("To avoid this, either specify the input file before --hist, or use --hist=output.txt syntax.");
+            eprintln!("Note: If you're using --hist or --hist-count as the last option followed by a filename, the filename may have been interpreted as the histogram output path.");
+            eprintln!("To avoid this, either specify the input file before the flag, or use --hist=output.txt / --hist-count=output.txt syntax.");
         }
     }
 }
@@ -130,7 +130,7 @@ fn extract() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -153,7 +153,7 @@ fn extract_cram() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -174,7 +174,7 @@ fn extract_ubam() {
         ubam: true,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -197,7 +197,7 @@ fn extract_url() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -218,7 +218,7 @@ fn extract_json() {
         ubam: false,
         format: OutputFormat::Json,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -239,7 +239,7 @@ fn extract_tsv() {
         ubam: false,
         format: OutputFormat::Tsv,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -261,7 +261,7 @@ fn extract_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     
     // The test should still run without panicking
@@ -285,7 +285,7 @@ fn extract_json_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Json,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);
@@ -308,7 +308,7 @@ fn extract_tsv_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Tsv,
         scaled: false,
-        hist_count: false,
+        hist_count: None,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);
@@ -331,7 +331,7 @@ fn extract_hist_scaled() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: true, // Set scaled to true for this test
-        hist_count: false,
+        hist_count: None,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -352,7 +352,7 @@ fn extract_hist_count() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: true,
+        hist_count: Some(None),
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -374,7 +374,7 @@ fn extract_hist_count_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
-        hist_count: true,
+        hist_count: Some(None),
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);

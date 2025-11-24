@@ -134,22 +134,34 @@ pub fn process_metrics(
             OutputFormat::Text => {
                 crate::text_output::print_text_output(&metrics_obj);
                 // Handle --hist-count flag (output empty histogram counts after metrics)
-                if args.hist_count {
-                    println!("\nbin_start\tbin_end\tcount");
+                if let Some(hist_count_file) = &args.hist_count {
+                    if let Some(file) = hist_count_file {
+                        std::fs::write(file, "\nbin_start\tbin_end\tcount\n")?;
+                    } else {
+                        println!("\nbin_start\tbin_end\tcount");
+                    }
                 }
             },
             OutputFormat::Json => {
                 println!("{}", serde_json::to_string_pretty(&metrics_obj).unwrap());
                 // Handle --hist-count flag (output empty histogram counts after metrics)
-                if args.hist_count {
-                    println!("\nbin_start\tbin_end\tcount");
+                if let Some(hist_count_file) = &args.hist_count {
+                    if let Some(file) = hist_count_file {
+                        std::fs::write(file, "\nbin_start\tbin_end\tcount\n")?;
+                    } else {
+                        println!("\nbin_start\tbin_end\tcount");
+                    }
                 }
             },
             OutputFormat::Tsv => {
                 crate::tsv_output::print_tsv_output(&metrics_obj);
                 // Handle --hist-count flag (output empty histogram counts after metrics)
-                if args.hist_count {
-                    println!("\nbin_start\tbin_end\tcount");
+                if let Some(hist_count_file) = &args.hist_count {
+                    if let Some(file) = hist_count_file {
+                        std::fs::write(file, "\nbin_start\tbin_end\tcount\n")?;
+                    } else {
+                        println!("\nbin_start\tbin_end\tcount");
+                    }
                 }
             },
         }
@@ -280,8 +292,8 @@ pub fn process_metrics(
                 histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
             // Handle --hist-count flag (output histogram counts after metrics)
-            if args.hist_count {
-                histograms::output_histogram_counts(&metrics_data);
+            if let Some(hist_count_file) = &args.hist_count {
+                histograms::output_histogram_counts(&metrics_data, hist_count_file)?;
             }
         }
         OutputFormat::Json => {
@@ -290,8 +302,8 @@ pub fn process_metrics(
                 histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
             // Handle --hist-count flag (output histogram counts after metrics)
-            if args.hist_count {
-                histograms::output_histogram_counts(&metrics_data);
+            if let Some(hist_count_file) = &args.hist_count {
+                histograms::output_histogram_counts(&metrics_data, hist_count_file)?;
             }
         }
         OutputFormat::Tsv => {
@@ -300,8 +312,8 @@ pub fn process_metrics(
                 histograms::create_histograms(&metrics_data, hist_file, phaseblocks, args.scaled)?;
             }
             // Handle --hist-count flag (output histogram counts after metrics)
-            if args.hist_count {
-                histograms::output_histogram_counts(&metrics_data);
+            if let Some(hist_count_file) = &args.hist_count {
+                histograms::output_histogram_counts(&metrics_data, hist_count_file)?;
             }
         }
     }

@@ -5,7 +5,7 @@ use std::fs::File;
 
 use crate::extract_from_bam;
 
-fn output_histogram_counts_tsv(array: &[u128]) {
+fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
     // Handle empty array case
     if array.is_empty() {
         return;
@@ -31,22 +31,23 @@ fn output_histogram_counts_tsv(array: &[u128]) {
         }
     }
     
-    // Print TSV header with leading newline for formatting
-    println!("\nbin_start\tbin_end\tcount");
+    // Write TSV header with leading newline for formatting
+    writeln!(writer, "\nbin_start\tbin_end\tcount").expect("Unable to write histogram counts header");
     
-    // Print each bin
+    // Write each bin
     for (index, count) in counts.iter().enumerate() {
-        println!(
+        writeln!(
+            writer,
             "{}\t{}\t{}",
             index as u128 * stepsize,
             (index + 1) as u128 * stepsize,
             count
-        );
+        ).expect("Unable to write histogram counts");
     }
     
-    // Print overflow bin if it has any reads
+    // Write overflow bin if it has any reads
     if overflow > 0 {
-        println!("{}+\tNA\t{}", max_value, overflow);
+        writeln!(writer, "{}+\tNA\t{}", max_value, overflow).expect("Unable to write overflow bin");
     }
 }
 
@@ -266,8 +267,17 @@ pub fn create_histograms(
     Ok(())
 }
 
-pub fn output_histogram_counts(metrics_data: &extract_from_bam::Data) {
+pub fn output_histogram_counts(
+    metrics_data: &extract_from_bam::Data,
+    hist_count_file: &Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut writer: Box<dyn Write> = if let Some(file) = hist_count_file {
+        Box::new(File::create(file)?)
+    } else {
+        Box::new(io::stdout())
+    };
     if let Some(lengths) = &metrics_data.lengths {
-        output_histogram_counts_tsv(lengths);
+        output_histogram_counts_tsv(lengths, &mut writer);
     }
+    Ok(())
 }
