@@ -6,6 +6,11 @@ use std::fs::File;
 use crate::extract_from_bam;
 
 fn output_histogram_counts_tsv(array: &[u128]) {
+    // Handle empty array case
+    if array.is_empty() {
+        return;
+    }
+    
     // dynamically set the maximum value based on the maximum read length, capped at 60k
     let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
     let max_value = std::cmp::min(
@@ -13,7 +18,7 @@ fn output_histogram_counts_tsv(array: &[u128]) {
         (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000
     );
     let stepsize: u128 = 2000;
-    let step_count = max_value / stepsize as usize;
+    let step_count = (max_value as u128 / stepsize) as usize;
     let mut counts = vec![0; step_count];
     let mut overflow = 0; // Track overflow reads
     
@@ -34,7 +39,7 @@ fn output_histogram_counts_tsv(array: &[u128]) {
         println!(
             "{}\t{}\t{}",
             index as u128 * stepsize,
-            (index + 1) * stepsize as usize,
+            (index + 1) as u128 * stepsize,
             count
         );
     }
