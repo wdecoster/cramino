@@ -31,8 +31,8 @@ fn output_histogram_counts_tsv(array: &[u128]) {
         }
     }
     
-    // Print TSV header
-    println!("bin_start\tbin_end\tcount");
+    // Print TSV header with leading newline for formatting
+    println!("\nbin_start\tbin_end\tcount");
     
     // Print each bin
     for (index, count) in counts.iter().enumerate() {
