@@ -36,7 +36,7 @@ pub struct Cli {
     min_read_len: usize,
 
     /// If histograms have to be generated (optionally specify output file)
-    #[clap(long, value_parser, value_name = "FILE", num_args = 0..=1)]
+    #[clap(long, value_parser, value_name = "FILE", num_args = 0..=1, conflicts_with = "hist_count")]
     hist: Option<Option<String>>,
 
     /// Write data to an arrow format file
@@ -68,7 +68,7 @@ pub struct Cli {
     pub scaled: bool,
 
     /// Output histogram bin counts in TSV format to stdout
-    #[clap(long, value_parser)]
+    #[clap(long, value_parser, conflicts_with = "hist")]
     pub hist_count: bool,
 }
 
