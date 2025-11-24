@@ -5,6 +5,46 @@ use std::fs::File;
 
 use crate::extract_from_bam;
 
+fn output_histogram_counts_tsv(array: &[u128]) {
+    // dynamically set the maximum value based on the maximum read length, capped at 60k
+    let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
+    let max_value = std::cmp::min(
+        60_000,
+        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000
+    );
+    let stepsize: u128 = 2000;
+    let step_count = max_value / stepsize as usize;
+    let mut counts = vec![0; step_count];
+    let mut overflow = 0; // Track overflow reads
+    
+    for &value in array {
+        if value >= max_value as u128 {
+            overflow += 1;
+        } else {
+            let index = (value / stepsize) as usize;
+            counts[index] += 1;
+        }
+    }
+    
+    // Print TSV header
+    println!("bin_start\tbin_end\tcount");
+    
+    // Print each bin
+    for (index, count) in counts.iter().enumerate() {
+        println!(
+            "{}\t{}\t{}",
+            index as u128 * stepsize,
+            (index + 1) * stepsize as usize,
+            count
+        );
+    }
+    
+    // Print overflow bin if it has any reads
+    if overflow > 0 {
+        println!("{}+\tNA\t{}", max_value, overflow);
+    }
+}
+
 // the histograms below are fully defined by the step size and the maximum value
 // the step size is the size of each bin
 // the maximum value is the value of the last bin
@@ -219,4 +259,10 @@ pub fn create_histograms(
         make_histogram_exons(exons, &mut writer);
     }
     Ok(())
+}
+
+pub fn output_histogram_counts(metrics_data: &extract_from_bam::Data) {
+    if let Some(lengths) = &metrics_data.lengths {
+        output_histogram_counts_tsv(lengths);
+    }
 }

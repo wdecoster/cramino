@@ -66,6 +66,10 @@ pub struct Cli {
     /// Scale histogram bins by total basepairs in each bin (not just read count)
     #[clap(long, value_parser)]
     pub scaled: bool,
+
+    /// Output histogram bin counts in TSV format to stdout
+    #[clap(long, value_parser)]
+    pub hist_count: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -126,6 +130,7 @@ fn extract() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -148,6 +153,7 @@ fn extract_cram() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -168,6 +174,7 @@ fn extract_ubam() {
         ubam: true,
         format: OutputFormat::Text,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -190,6 +197,7 @@ fn extract_url() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -210,6 +218,7 @@ fn extract_json() {
         ubam: false,
         format: OutputFormat::Json,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -230,6 +239,7 @@ fn extract_tsv() {
         ubam: false,
         format: OutputFormat::Tsv,
         scaled: false,
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
@@ -251,6 +261,7 @@ fn extract_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: false,
+        hist_count: false,
     };
     
     // The test should still run without panicking
@@ -274,6 +285,7 @@ fn extract_json_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Json,
         scaled: false,
+        hist_count: false,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);
@@ -296,6 +308,7 @@ fn extract_tsv_with_high_min_length() {
         ubam: false,
         format: OutputFormat::Tsv,
         scaled: false,
+        hist_count: false,
     };
     
     let (metrics, header) = extract_from_bam::extract(&args);
@@ -318,7 +331,53 @@ fn extract_hist_scaled() {
         ubam: false,
         format: OutputFormat::Text,
         scaled: true, // Set scaled to true for this test
+        hist_count: false,
     };
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
+}
+
+#[test]
+fn extract_hist_count() {
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 0,
+        hist: None,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Text,
+        scaled: false,
+        hist_count: true,
+    };
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok())
+}
+
+#[test]
+fn extract_hist_count_with_high_min_length() {
+    // Test that --hist-count works with empty results
+    let args = Cli {
+        input: "test-data/small-test-phased.bam".to_string(),
+        threads: 8,
+        reference: None,
+        min_read_len: 1_000_000, // Set very high to ensure no reads match
+        hist: None,
+        arrow: None,
+        karyotype: false,
+        phased: false,
+        spliced: false,
+        ubam: false,
+        format: OutputFormat::Text,
+        scaled: false,
+        hist_count: true,
+    };
+    
+    let (metrics, header) = extract_from_bam::extract(&args);
+    assert!(metrics.lengths.as_ref().unwrap().is_empty());
+    assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
 }

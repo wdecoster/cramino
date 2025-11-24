@@ -112,6 +112,12 @@ pub fn process_metrics(
     if lengths.is_empty() {
         eprintln!("Warning: No reads pass your filtering criteria");
         
+        // If --hist-count is specified, just output empty TSV and return
+        if args.hist_count {
+            println!("bin_start\tbin_end\tcount");
+            return Ok(());
+        }
+        
         // Set minimal metrics with zeros
         metrics_obj.alignment_stats = metrics::AlignmentStats {
             num_alignments: 0,
@@ -257,6 +263,12 @@ pub fn process_metrics(
             mean_exons: (exon_counts.iter().sum::<usize>() as f32) / (num_reads as f32),
             fraction_unspliced: (num_single_exon as f32) / (num_reads as f32),
         });
+    }
+
+    // Handle --hist-count flag (output to stdout)
+    if args.hist_count {
+        histograms::output_histogram_counts(&metrics_data);
+        return Ok(());
     }
 
     // Output based on selected format
