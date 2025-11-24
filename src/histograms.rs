@@ -5,6 +5,52 @@ use std::fs::File;
 
 use crate::extract_from_bam;
 
+fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
+    // Handle empty array case
+    if array.is_empty() {
+        return;
+    }
+    
+    // dynamically set the maximum value based on the maximum read length, capped at 60k
+    let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
+    let max_value = std::cmp::min(
+        60_000,
+        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000
+    );
+    let stepsize: u128 = 2000;
+    let step_count = (max_value as u128 / stepsize) as usize;
+    let mut counts = vec![0; step_count];
+    let mut overflow = 0; // Track overflow reads
+    
+    for &value in array {
+        if value >= max_value as u128 {
+            overflow += 1;
+        } else {
+            let index = (value / stepsize) as usize;
+            counts[index] += 1;
+        }
+    }
+    
+    // Write TSV header with leading newline for formatting
+    writeln!(writer, "\nbin_start\tbin_end\tcount").expect("Unable to write histogram counts header");
+    
+    // Write each bin
+    for (index, count) in counts.iter().enumerate() {
+        writeln!(
+            writer,
+            "{}\t{}\t{}",
+            index as u128 * stepsize,
+            (index + 1) as u128 * stepsize,
+            count
+        ).expect("Unable to write histogram counts");
+    }
+    
+    // Write overflow bin if it has any reads
+    if overflow > 0 {
+        writeln!(writer, "{}+\tNA\t{}", max_value, overflow).expect("Unable to write overflow bin");
+    }
+}
+
 // the histograms below are fully defined by the step size and the maximum value
 // the step size is the size of each bin
 // the maximum value is the value of the last bin
@@ -217,6 +263,21 @@ pub fn create_histograms(
     }
     if let Some(exons) = &metrics_data.exons {
         make_histogram_exons(exons, &mut writer);
+    }
+    Ok(())
+}
+
+pub fn output_histogram_counts(
+    metrics_data: &extract_from_bam::Data,
+    hist_count_file: &Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut writer: Box<dyn Write> = if let Some(file) = hist_count_file {
+        Box::new(File::create(file)?)
+    } else {
+        Box::new(io::stdout())
+    };
+    if let Some(lengths) = &metrics_data.lengths {
+        output_histogram_counts_tsv(lengths, &mut writer);
     }
     Ok(())
 }
