@@ -1,6 +1,6 @@
 use clap::Parser;
 use log::info;
-use metrics_processor::OutputFormat;  // Import the enum
+use metrics_processor::OutputFormat; // Import the enum
 
 pub mod calculations;
 pub mod extract_from_bam;
@@ -75,7 +75,8 @@ pub struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let mut args = Cli::parse();
-    utils::is_file(&args.input).unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
+    utils::is_file(&args.input)
+        .unwrap_or_else(|_| panic!("Path to input file {} is invalid", args.input));
     check_stdin_input(&args.input);
     if args.ubam {
         args.karyotype = false;
@@ -95,13 +96,14 @@ fn check_stdin_input(input: &str) {
         eprintln!("Reading from stdin. If this is unexpected, make sure your input file is correctly specified.");
         // Check if stdin is connected to a terminal (interactive) using std library
         if std::io::IsTerminal::is_terminal(&std::io::stdin()) {
-            eprintln!("Warning: stdin appears to be a terminal. Did you mean to specify an input file?");
+            eprintln!(
+                "Warning: stdin appears to be a terminal. Did you mean to specify an input file?"
+            );
             eprintln!("Note: If you're using --hist or --hist-count as the last option followed by a filename, the filename may have been interpreted as the histogram output path.");
             eprintln!("To avoid this, either specify the input file before the flag, or use --hist=output.txt / --hist-count=output.txt syntax.");
         }
     }
 }
-
 
 #[cfg(test)]
 #[ctor::ctor]
@@ -263,7 +265,7 @@ fn extract_with_high_min_length() {
         scaled: false,
         hist_count: None,
     };
-    
+
     // The test should still run without panicking
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics.lengths.as_ref().unwrap().is_empty());
@@ -287,7 +289,7 @@ fn extract_json_with_high_min_length() {
         scaled: false,
         hist_count: None,
     };
-    
+
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics.lengths.as_ref().unwrap().is_empty());
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
@@ -310,7 +312,7 @@ fn extract_tsv_with_high_min_length() {
         scaled: false,
         hist_count: None,
     };
-    
+
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics.lengths.as_ref().unwrap().is_empty());
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());
@@ -376,7 +378,7 @@ fn extract_hist_count_with_high_min_length() {
         scaled: false,
         hist_count: Some(None),
     };
-    
+
     let (metrics, header) = extract_from_bam::extract(&args);
     assert!(metrics.lengths.as_ref().unwrap().is_empty());
     assert!(metrics_processor::process_metrics(metrics, &args, header).is_ok());

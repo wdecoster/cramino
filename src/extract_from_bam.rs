@@ -1,11 +1,10 @@
 use bam::ext::BamRecordExtensions;
+use log::warn;
+use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read, htslib};
 use std::env;
 use url::Url;
-use rayon::prelude::*;
-use log::warn;
-
 
 pub struct Data {
     pub lengths: Option<Vec<u128>>,
@@ -108,8 +107,7 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         }),
         (false, l) if l > 0 => Box::new(|record: &bam::Record| {
             // filter out unmapped, with a length filter
-            record.flags() & htslib::BAM_FUNMAP as u16 == 0
-                && record.seq_len() > min_read_len
+            record.flags() & htslib::BAM_FUNMAP as u16 == 0 && record.seq_len() > min_read_len
         }),
         // keep unmapped reads, no length filter
         (true, 0) => Box::new(|_: &bam::Record| true),

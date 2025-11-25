@@ -1,20 +1,20 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metrics {
     pub file_info: FileInfo,
     pub alignment_stats: AlignmentStats,
     pub read_stats: ReadStats,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identity_stats: Option<IdentityStats>,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase_stats: Option<PhaseStats>,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub karyotype_stats: Option<Vec<ChromosomeData>>,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub splice_stats: Option<SpliceStats>,
 }

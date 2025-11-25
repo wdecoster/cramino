@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::cmp::max;
-use std::io::{self, Write};
 use std::fs::File;
+use std::io::{self, Write};
 
 use crate::extract_from_bam;
 
@@ -10,18 +10,22 @@ fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
     if array.is_empty() {
         return;
     }
-    
+
     // dynamically set the maximum value based on the maximum read length, capped at 60k
-    let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
+    let max_read_length = array
+        .iter()
+        .copied()
+        .max()
+        .expect("Array is empty, cannot find max");
     let max_value = std::cmp::min(
         60_000,
-        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000
+        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000,
     );
     let stepsize: u128 = 2000;
     let step_count = (max_value as u128 / stepsize) as usize;
     let mut counts = vec![0; step_count];
     let mut overflow = 0; // Track overflow reads
-    
+
     for &value in array {
         if value >= max_value as u128 {
             overflow += 1;
@@ -30,10 +34,11 @@ fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
             counts[index] += 1;
         }
     }
-    
+
     // Write TSV header with leading newline for formatting
-    writeln!(writer, "\nbin_start\tbin_end\tcount").expect("Unable to write histogram counts header");
-    
+    writeln!(writer, "\nbin_start\tbin_end\tcount")
+        .expect("Unable to write histogram counts header");
+
     // Write each bin
     for (index, count) in counts.iter().enumerate() {
         writeln!(
@@ -42,9 +47,10 @@ fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
             index as u128 * stepsize,
             (index + 1) as u128 * stepsize,
             count
-        ).expect("Unable to write histogram counts");
+        )
+        .expect("Unable to write histogram counts");
     }
-    
+
     // Write overflow bin if it has any reads
     if overflow > 0 {
         writeln!(writer, "{}+\tNA\t{}", max_value, overflow).expect("Unable to write overflow bin");
@@ -62,10 +68,14 @@ fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W) {
 
 fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool) {
     // dynamically set the maximum value based on the maximum read length, capped at 60k
-    let max_read_length = array.iter().copied().max().expect("Array is empty, cannot find max");
+    let max_read_length = array
+        .iter()
+        .copied()
+        .max()
+        .expect("Array is empty, cannot find max");
     let max_value = std::cmp::min(
         60_000,
-        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000
+        (((max_read_length as f64) / 10_000.0).ceil() as usize) * 10_000,
     );
     let stepsize: u128 = 2000;
     let step_count = max_value / stepsize as usize;
@@ -89,7 +99,16 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
     } else {
         std::cmp::max(array.len() / 500, 1)
     };
-    writeln!(writer, "\n\n# Histogram for read lengths:{}", if scaled { " (scaled by total basepairs)" } else { "" }).expect("Unable to write histogram");
+    writeln!(
+        writer,
+        "\n\n# Histogram for read lengths:{}",
+        if scaled {
+            " (scaled by total basepairs)"
+        } else {
+            ""
+        }
+    )
+    .expect("Unable to write histogram");
     for (index, (entry, bp)) in counts.iter().zip(basepairs.iter()).enumerate() {
         let bar = if scaled {
             "∎".repeat(((*bp as usize) / dotsize).max(0))
@@ -105,7 +124,8 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
                 (index + 1) * stepsize as usize
             ),
             bar
-        ).expect("Unable to write histogram");
+        )
+        .expect("Unable to write histogram");
     }
     if overflow > 0 {
         let bar = if scaled {
@@ -113,12 +133,8 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
         } else {
             "∎".repeat((overflow / dotsize).max(0))
         };
-        writeln!(
-            writer,
-            "{: >11} {}",
-            format!("{}+", max_value),
-            bar
-        ).expect("Unable to write histogram");
+        writeln!(writer, "{: >11} {}", format!("{}+", max_value), bar)
+            .expect("Unable to write histogram");
     }
 }
 
@@ -137,7 +153,8 @@ fn make_histogram_identities<W: Write>(array: &[f64], writer: &mut W) {
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
     let dotsize = max(array.len() / 500, 1);
-    writeln!(writer, "\n\n# Histogram for Phred-scaled accuracies:").expect("Unable to write histogram");
+    writeln!(writer, "\n\n# Histogram for Phred-scaled accuracies:")
+        .expect("Unable to write histogram");
     // print every entry in the vector, except the last one which is done separately
     for (index, entry) in counts.iter().dropping_back(1).enumerate() {
         writeln!(
@@ -149,14 +166,16 @@ fn make_histogram_identities<W: Write>(array: &[f64], writer: &mut W) {
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
-        ).expect("Unable to write histogram");
+        )
+        .expect("Unable to write histogram");
     }
     writeln!(
         writer,
         "{: >6} {}",
         format!("Q{}+", (counts.len() - 1) * stepsize as usize),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    ).expect("Unable to write histogram");
+    )
+    .expect("Unable to write histogram");
 }
 
 pub fn make_histogram_phaseblocks<W: Write>(array: &[i64], writer: &mut W) {
@@ -191,14 +210,16 @@ pub fn make_histogram_phaseblocks<W: Write>(array: &[i64], writer: &mut W) {
                 (index + 1) * stepsize as usize
             ),
             "∎".repeat(entry / dotsize)
-        ).expect("Unable to write histogram");
+        )
+        .expect("Unable to write histogram");
     }
     writeln!(
         writer,
         "{: >14} {}",
         format!("{}+", (counts.len() - 1) * stepsize as usize),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    ).expect("Unable to write histogram");
+    )
+    .expect("Unable to write histogram");
 }
 
 fn make_histogram_exons<W: Write>(array: &[usize], writer: &mut W) {
@@ -223,7 +244,8 @@ fn make_histogram_exons<W: Write>(array: &[usize], writer: &mut W) {
         "{: >9} {}",
         format!("unspliced"),
         "∎".repeat(counts[1] / dotsize)
-    ).expect("Unable to write histogram");
+    )
+    .expect("Unable to write histogram");
     // print every entry in the vector, except the first two (first one empty, and second one already done) and last one (done later)
     for (index, entry) in counts.iter().skip(2).dropping_back(1).enumerate() {
         writeln!(
@@ -231,14 +253,16 @@ fn make_histogram_exons<W: Write>(array: &[usize], writer: &mut W) {
             "{: >9} {}",
             format!("{} exons", (index + 2)),
             "∎".repeat(entry / dotsize)
-        ).expect("Unable to write histogram");
+        )
+        .expect("Unable to write histogram");
     }
     writeln!(
         writer,
         "{: >9} {}",
         format!("{}+ exons", (counts.len() - 1)),
         "∎".repeat(counts.last().unwrap() / dotsize)
-    ).expect("Unable to write histogram");
+    )
+    .expect("Unable to write histogram");
 }
 
 pub fn create_histograms(

@@ -1,9 +1,9 @@
 use crate::{
     calculations, extract_from_bam::Data, file_info, histograms, metrics, phased, utils, Cli,
 };
+use clap::builder::{TypedValueParser, ValueParserFactory};
 use rust_htslib::bam;
 use std::collections::HashMap;
-use clap::builder::{TypedValueParser, ValueParserFactory};
 use std::fmt;
 use std::str::FromStr;
 
@@ -60,13 +60,12 @@ impl TypedValueParser for OutputFormatValueParser {
         arg: Option<&clap::Arg>,
         value: &std::ffi::OsStr,
     ) -> Result<Self::Value, clap::Error> {
-        let value_str = value.to_str().ok_or_else(|| {
-            clap::Error::new(clap::error::ErrorKind::InvalidUtf8).with_cmd(cmd)
-        })?;
+        let value_str = value
+            .to_str()
+            .ok_or_else(|| clap::Error::new(clap::error::ErrorKind::InvalidUtf8).with_cmd(cmd))?;
 
         OutputFormat::from_str(value_str).map_err(|_err| {
-            let mut err = clap::Error::new(clap::error::ErrorKind::InvalidValue)
-                .with_cmd(cmd);
+            let mut err = clap::Error::new(clap::error::ErrorKind::InvalidValue).with_cmd(cmd);
             if let Some(arg) = arg {
                 err.insert(
                     clap::error::ContextKind::InvalidArg,
@@ -107,18 +106,18 @@ pub fn process_metrics(
     });
 
     let lengths = metrics_data.lengths.as_ref().unwrap();
-    
+
     // Check if no reads passed the filters
     if lengths.is_empty() {
         eprintln!("Warning: No reads pass your filtering criteria");
-        
+
         // Set minimal metrics with zeros
         metrics_obj.alignment_stats = metrics::AlignmentStats {
             num_alignments: 0,
             percent_from_total: 0.0,
             num_reads: 0,
         };
-        
+
         metrics_obj.read_stats = metrics::ReadStats {
             yield_gb: 0.0,
             mean_coverage: 0.0,
@@ -128,7 +127,7 @@ pub fn process_metrics(
             median_length: 0.0,
             mean_length: 0.0,
         };
-        
+
         // Output based on selected format
         match args.format {
             OutputFormat::Text => {
@@ -141,7 +140,7 @@ pub fn process_metrics(
                         println!("\nbin_start\tbin_end\tcount");
                     }
                 }
-            },
+            }
             OutputFormat::Json => {
                 println!("{}", serde_json::to_string_pretty(&metrics_obj).unwrap());
                 // Handle --hist-count flag (output empty histogram counts after metrics)
@@ -152,7 +151,7 @@ pub fn process_metrics(
                         println!("\nbin_start\tbin_end\tcount");
                     }
                 }
-            },
+            }
             OutputFormat::Tsv => {
                 crate::tsv_output::print_tsv_output(&metrics_obj);
                 // Handle --hist-count flag (output empty histogram counts after metrics)
@@ -163,12 +162,12 @@ pub fn process_metrics(
                         println!("\nbin_start\tbin_end\tcount");
                     }
                 }
-            },
+            }
         }
-        
+
         return Ok(());
     }
-    
+
     // Continue with normal processing if we have reads
     let num_alignments = lengths.len();
     let num_reads = metrics_data.num_reads;
@@ -210,7 +209,10 @@ pub fn process_metrics(
             metrics_data.tids.as_ref().expect("TIDs data is missing"),
             metrics_data.starts.clone().expect("Starts data is missing"),
             metrics_data.ends.clone().expect("Ends data is missing"),
-            metrics_data.phasesets.as_ref().expect("Phase sets data is missing"),
+            metrics_data
+                .phasesets
+                .as_ref()
+                .expect("Phase sets data is missing"),
         );
 
         if !phaseblocks.is_empty() {
@@ -250,8 +252,7 @@ pub fn process_metrics(
             if *tid >= 0 {
                 // Skip unmapped reads (tid = -1)
                 let chrom = std::str::from_utf8(
-                    head_view
-                        .tid2name((*tid).try_into().expect("Failed to convert TID to usize")),
+                    head_view.tid2name((*tid).try_into().expect("Failed to convert TID to usize")),
                 )
                 .unwrap();
                 let chrom_length = head_view
@@ -320,4 +321,3 @@ pub fn process_metrics(
 
     Ok(())
 }
-

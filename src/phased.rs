@@ -38,7 +38,7 @@ pub fn phase_metrics(
 }
 
 pub fn median(array: &[i64]) -> f64 {
-    if (array.len() % 2) == 0 {
+    if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
         (array[ind_left] + array[ind_right]) as f64 / 2.0

@@ -4,7 +4,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     // Prepare headers and values separately
     let mut headers = Vec::new();
     let mut values = Vec::new();
-    
+
     // File info
     headers.push("file_name");
     values.push(metrics.file_info.name.clone());
@@ -12,7 +12,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     values.push(metrics.file_info.path.clone());
     headers.push("creation_time");
     values.push(metrics.file_info.creation_time.clone());
-    
+
     // Alignment stats
     headers.push("num_alignments");
     values.push(metrics.alignment_stats.num_alignments.to_string());
@@ -20,7 +20,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     values.push(format!("{:.2}", metrics.alignment_stats.percent_from_total));
     headers.push("num_reads");
     values.push(metrics.alignment_stats.num_reads.to_string());
-    
+
     // Read stats
     headers.push("yield_gb");
     values.push(format!("{:.2}", metrics.read_stats.yield_gb));
@@ -36,7 +36,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     values.push(format!("{:.2}", metrics.read_stats.median_length));
     headers.push("mean_length");
     values.push(format!("{:.2}", metrics.read_stats.mean_length));
-    
+
     // Identity stats (if available)
     if let Some(identity_stats) = &metrics.identity_stats {
         headers.push("median_identity");
@@ -46,7 +46,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
         headers.push("modal_identity");
         values.push(format!("{:.1}", identity_stats.modal_identity));
     }
-    
+
     // Phase stats (if available)
     if let Some(phase_stats) = &metrics.phase_stats {
         headers.push("fraction_phased");
@@ -60,7 +60,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
         headers.push("n50_phaseblock_length");
         values.push(phase_stats.n50_phaseblock_length.to_string());
     }
-    
+
     // Splice stats (if available)
     if let Some(splice_stats) = &metrics.splice_stats {
         headers.push("median_exons");
@@ -70,7 +70,7 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
         headers.push("fraction_unspliced");
         values.push(format!("{:.2}", splice_stats.fraction_unspliced));
     }
-    
+
     // Print headers and values as TSV
     println!("{}", headers.join("\t"));
     println!("{}", values.join("\t"));

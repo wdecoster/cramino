@@ -3,9 +3,9 @@ use std::collections::HashMap;
 pub fn get_n(lengths: &[u128], nb_bases_total: u128, percentile: f64) -> u128 {
     // Handle empty array case
     if lengths.is_empty() {
-        return 0;  // Return 0 for N50/N75 when no reads match the criteria
+        return 0; // Return 0 for N50/N75 when no reads match the criteria
     }
-    
+
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
@@ -18,7 +18,7 @@ pub fn get_n(lengths: &[u128], nb_bases_total: u128, percentile: f64) -> u128 {
 }
 
 pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
-    if (array.len() % 2) == 0 {
+    if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
         (array[ind_left].into() + array[ind_right].into()) / 2.0
@@ -28,7 +28,7 @@ pub fn median<T: Into<f64> + Copy>(array: &[T]) -> f64 {
 }
 
 pub fn median_length(array: &[u128]) -> f64 {
-    if (array.len() % 2) == 0 {
+    if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
 
@@ -40,7 +40,7 @@ pub fn median_length(array: &[u128]) -> f64 {
 
 pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
     array.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-    if (array.len() % 2) == 0 {
+    if array.len().is_multiple_of(2) {
         let ind_left = array.len().checked_div(2).unwrap().saturating_sub(1);
         let ind_right = array.len().checked_div(2).unwrap_or(0);
         if (ind_left == 0) & (ind_right == 0) {
@@ -53,7 +53,7 @@ pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
 }
 
 pub fn median_splice(array: &[usize]) -> usize {
-    if (array.len() % 2) == 0 {
+    if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
         (array[ind_left] + array[ind_right]) / 2
