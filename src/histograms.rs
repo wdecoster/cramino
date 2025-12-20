@@ -240,25 +240,64 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
     }
 }
 
-fn make_histogram_identities<W: Write>(array: &[f64], writer: &mut W) {
+fn make_histogram_identities<W: Write>(
+    identities: &[f64],
+    q_score_hist: Option<&extract_from_bam::QScoreHistogramData>,
+    writer: &mut W,
+    scaled: bool,
+) {
     let stepsize: u64 = 1;
     let max_value = 40;
     let step_count = max_value / stepsize as usize;
-    let mut counts = vec![0; step_count + 1];
-    for value in array.iter().map(|x| utils::accuracy_to_phred(*x)) {
-        if value < max_value {
-            counts[value] += 1;
+
+    let (counts, bases, total_reads, total_bases) = if let Some(hist) = q_score_hist {
+        let mut counts = vec![0u64; step_count + 1];
+        let mut bases = vec![0u128; step_count + 1];
+        for index in 0..counts.len() {
+            counts[index] = *hist.counts.get(index).unwrap_or(&0);
+            bases[index] = *hist.bases.get(index).unwrap_or(&0);
         }
-    }
-    // the last bin is for all values above the last step
-    counts[step_count] = array.len() - counts.iter().sum::<usize>();
+        let total_reads = counts.iter().sum::<u64>() as usize;
+        let total_bases = bases.iter().sum::<u128>();
+        (counts, bases, total_reads, total_bases)
+    } else {
+        let mut counts = vec![0u64; step_count + 1];
+        for value in identities.iter().map(|x| utils::accuracy_to_phred(*x)) {
+            if value < max_value {
+                counts[value] += 1;
+            }
+        }
+        let counted = counts.iter().sum::<u64>();
+        // the last bin is for all values above the last step
+        counts[step_count] = identities.len() as u64 - counted;
+        let bases = counts.iter().map(|count| *count as u128).collect();
+        (counts, bases, identities.len(), identities.len() as u128)
+    };
+
     // the dotsize variable determines how many reads are represented by a single dot
     // I either have to set this dynamically or experiment with it further
-    let dotsize = max(array.len() / 500, 1);
-    writeln!(writer, "\n\n# Histogram for Phred-scaled accuracies:")
-        .expect("Unable to write histogram");
+    let dotsize = if scaled {
+        max((total_bases / 500) as usize, 1)
+    } else {
+        max(total_reads / 500, 1)
+    };
+    writeln!(
+        writer,
+        "\n\n# Histogram for Phred-scaled accuracies:{}",
+        if scaled {
+            " (scaled by total basepairs)"
+        } else {
+            ""
+        }
+    )
+    .expect("Unable to write histogram");
     // print every entry in the vector, except the last one which is done separately
-    for (index, entry) in counts.iter().dropping_back(1).enumerate() {
+    for (index, (count, bases)) in counts.iter().zip(bases.iter()).dropping_back(1).enumerate() {
+        let value = if scaled {
+            (*bases / dotsize as u128) as usize
+        } else {
+            (*count as usize) / dotsize
+        };
         writeln!(
             writer,
             "{: >6} {}",
@@ -267,15 +306,21 @@ fn make_histogram_identities<W: Write>(array: &[f64], writer: &mut W) {
                 index as u64 * stepsize,
                 (index + 1) * stepsize as usize
             ),
-            "∎".repeat(entry / dotsize)
+            "∎".repeat(value)
         )
         .expect("Unable to write histogram");
     }
+    let last_index = counts.len() - 1;
+    let last_value = if scaled {
+        (bases[last_index] / dotsize as u128) as usize
+    } else {
+        (counts[last_index] as usize) / dotsize
+    };
     writeln!(
         writer,
         "{: >6} {}",
         format!("Q{}+", (counts.len() - 1) * stepsize as usize),
-        "∎".repeat(counts.last().unwrap() / dotsize)
+        "∎".repeat(last_value)
     )
     .expect("Unable to write histogram");
 }
@@ -382,7 +427,12 @@ pub fn create_histograms(
         make_histogram_lengths(lengths, &mut writer, scaled);
     }
     if let Some(identities) = &metrics_data.identities {
-        make_histogram_identities(identities, &mut writer);
+        make_histogram_identities(
+            identities,
+            metrics_data.q_score_hist.as_ref(),
+            &mut writer,
+            scaled,
+        );
     }
     if let Some(phaseblocks) = phaseblocks {
         make_histogram_phaseblocks(&phaseblocks, &mut writer);
@@ -483,5 +533,44 @@ mod tests {
         assert_eq!(lines[1], "0\t2000\t1000");
         assert_eq!(lines[2], "2000\t4000\t3000");
         assert_eq!(lines[3], "4000\t6000\t5000");
+    }
+
+    #[test]
+    fn qscore_histogram_scaled_uses_bases_for_dots() {
+        let mut counts = vec![0u64; 41];
+        let mut bases = vec![0u128; 41];
+        counts[10] = 1;
+        counts[20] = 1;
+        bases[10] = 4;
+        bases[20] = 10;
+        let q_score_hist = extract_from_bam::QScoreHistogramData { counts, bases };
+
+        let mut output = Vec::new();
+        make_histogram_identities(&[], Some(&q_score_hist), &mut output, false);
+        let output = String::from_utf8(output).expect("Unscaled output is valid UTF-8");
+        let q10 = output
+            .lines()
+            .find(|line| line.trim_start().starts_with("Q10-11"))
+            .expect("Missing Q10-11 line");
+        let q20 = output
+            .lines()
+            .find(|line| line.trim_start().starts_with("Q20-21"))
+            .expect("Missing Q20-21 line");
+        assert_eq!(q10.chars().filter(|&c| c == '∎').count(), 1);
+        assert_eq!(q20.chars().filter(|&c| c == '∎').count(), 1);
+
+        let mut output_scaled = Vec::new();
+        make_histogram_identities(&[], Some(&q_score_hist), &mut output_scaled, true);
+        let output_scaled = String::from_utf8(output_scaled).expect("Scaled output is valid UTF-8");
+        let q10_scaled = output_scaled
+            .lines()
+            .find(|line| line.trim_start().starts_with("Q10-11"))
+            .expect("Missing Q10-11 line (scaled)");
+        let q20_scaled = output_scaled
+            .lines()
+            .find(|line| line.trim_start().starts_with("Q20-21"))
+            .expect("Missing Q20-21 line (scaled)");
+        assert_eq!(q10_scaled.chars().filter(|&c| c == '∎').count(), 4);
+        assert_eq!(q20_scaled.chars().filter(|&c| c == '∎').count(), 10);
     }
 }

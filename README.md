@@ -64,7 +64,7 @@ The `% from total reads` output field contains the percentage of reads used for 
 * calculating a normalised number of reads per chromosome, e.g. to determine the sex or aneuploidies (`--karyotype`)
 * information about the phase blocks. (`--phased`)
 * information about number of splice sites. (`--spliced`)
-* histograms of read lengths and read identities, as below. (`--hist`). With `--phased`, also a histogram of phase block lengths. Please let me know if the histograms look inappropriately scaled for your data.
+* histograms of read lengths and read identities, as below. (`--hist`). With `--phased`, also a histogram of phase block lengths. With `--scaled`, read length and Phred accuracy histograms are basepair-weighted. Please let me know if the histograms look inappropriately scaled for your data.
 * histogram bin counts in TSV format (`--hist-count`). With `--scaled`, the TSV values are basepair totals instead of read counts.
 
 When `--hist` or `--hist-count` is set, JSON output includes histogram bins under `histograms.read_length` and `histograms.q_score`. Each bin includes `start`, `end` (or `null` for overflow), `count`, and `bases`.
