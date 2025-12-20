@@ -148,6 +148,8 @@ Q39-40
   Q40+ 
 ```
 
+Reproducible histogram output for `test-data/small-test-phased.bam` is available in `docs/histogram-example.txt` (unscaled) and `docs/histogram-example-scaled.txt` (scaled).
+
 ## CITATION
 
 If you use this tool, please consider citing our [publication](https://academic.oup.com/bioinformatics/article/39/5/btad311/7160911).
