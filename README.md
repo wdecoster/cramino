@@ -27,6 +27,7 @@ Options:
   -m, --min-read-len <MIN_READ_LEN>  Minimal length of read to be considered [default: 0]
       --hist [<FILE>]                If histograms have to be generated (optionally specify output file)
       --scaled                       Scale histogram bins by total basepairs in each bin (not just read count)
+      --hist-count [<FILE>]          Output histogram bin counts in TSV format (optionally specify output file)
       --arrow <ARROW>                Write data to an arrow format file
       --karyotype                    Provide normalized number of reads per chromosome
       --phased                       Calculate metrics for phased reads
@@ -64,6 +65,9 @@ The `% from total reads` output field contains the percentage of reads used for 
 * information about the phase blocks. (`--phased`)
 * information about number of splice sites. (`--spliced`)
 * histograms of read lengths and read identities, as below. (`--hist`). With `--phased`, also a histogram of phase block lengths. Please let me know if the histograms look inappropriately scaled for your data.
+* histogram bin counts in TSV format (`--hist-count`). With `--scaled`, the TSV values are basepair totals instead of read counts.
+
+When `--hist` or `--hist-count` is set, JSON output includes histogram bins under `histograms.read_length` and `histograms.q_score`. Each bin includes `start`, `end` (or `null` for overflow), `count`, and `bases`.
 
 ```text
 # Histogram for read lengths:

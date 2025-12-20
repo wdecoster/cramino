@@ -11,11 +11,17 @@ pub struct Data {
     pub num_reads: usize,
     pub all_counts: usize,
     pub identities: Option<Vec<f64>>,
+    pub q_score_hist: Option<QScoreHistogramData>,
     pub tids: Option<Vec<i32>>,
     pub starts: Option<Vec<i64>>,
     pub ends: Option<Vec<i64>>,
     pub phasesets: Option<Vec<Option<u32>>>,
     pub exons: Option<Vec<usize>>,
+}
+
+pub struct QScoreHistogramData {
+    pub counts: Vec<u64>,
+    pub bases: Vec<u128>,
 }
 
 /// Sets up the CURL_CA_BUNDLE environment variable for HTTPS/S3 access
@@ -56,6 +62,13 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     let mut lengths = vec![];
     let mut num_reads = 0;
     let mut identities = vec![];
+    let hist_requested = args.hist.is_some() || args.hist_count.is_some();
+    let mut q_score_counts = Vec::new();
+    let mut q_score_bases = Vec::new();
+    if hist_requested && !args.ubam {
+        q_score_counts = vec![0u64; 41];
+        q_score_bases = vec![0u128; 41];
+    }
     let mut tids = vec![];
     let mut starts = vec![];
     let mut ends = vec![];
@@ -126,7 +139,8 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         .inspect(|_| all_counts += 1)
         .filter(|read| filter_closure(read))
     {
-        lengths.push(read.seq_len() as u128 - softclipped_bases(&read));
+        let read_length = read.seq_len() as u128 - softclipped_bases(&read);
+        lengths.push(read_length);
         if !read.is_supplementary() {
             num_reads += 1;
         }
@@ -142,7 +156,14 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             exons.push(get_exon_number(&read));
         }
         if !args.ubam {
-            identities.push(gap_compressed_identity(read));
+            let identity = gap_compressed_identity(read);
+            identities.push(identity);
+            if hist_requested {
+                let phred = crate::utils::accuracy_to_phred(identity);
+                let index = if phred < 40 { phred } else { 40 };
+                q_score_counts[index] += 1;
+                q_score_bases[index] += read_length;
+            }
         }
     }
     if let Some(s) = &args.arrow {
@@ -168,6 +189,14 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             num_reads,
             all_counts,
             identities: if !args.ubam { Some(identities) } else { None },
+            q_score_hist: if hist_requested && !args.ubam {
+                Some(QScoreHistogramData {
+                    counts: q_score_counts,
+                    bases: q_score_bases,
+                })
+            } else {
+                None
+            },
             tids: if args.karyotype || args.phased {
                 Some(tids)
             } else {
