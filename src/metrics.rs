@@ -17,6 +17,9 @@ pub struct Metrics {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub splice_stats: Option<SpliceStats>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub histograms: Option<Histograms>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -74,6 +77,30 @@ pub struct SpliceStats {
     pub fraction_unspliced: f32,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Histograms {
+    pub read_length: Histogram,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub q_score: Option<Histogram>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Histogram {
+    pub step: u64,
+    pub max_value: u64,
+    pub bins: Vec<HistogramBin>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HistogramBin {
+    pub start: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<u64>,
+    pub count: u64,
+    pub bases: u128,
+}
+
 impl Metrics {
     pub fn new(file_info: FileInfo) -> Self {
         Metrics {
@@ -96,6 +123,7 @@ impl Metrics {
             phase_stats: None,
             karyotype_stats: None,
             splice_stats: None,
+            histograms: None,
         }
     }
 }
