@@ -1,5 +1,5 @@
 use crate::{
-    calculations, extract_from_bam::Data, file_info, histograms, metrics, phased, utils, Cli,
+    Cli, calculations, extract_from_bam::Data, file_info, histograms, metrics, phased, utils,
 };
 use clap::builder::{TypedValueParser, ValueParserFactory};
 use rust_htslib::bam;

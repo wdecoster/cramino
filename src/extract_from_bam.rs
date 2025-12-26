@@ -45,7 +45,8 @@ fn setup_ssl_certificates() {
     // Try each path in order
     for path in possible_paths {
         if std::path::Path::new(path).exists() {
-            env::set_var("CURL_CA_BUNDLE", path);
+            // TODO: Audit that the environment access only happens in single-threaded code.
+            unsafe { env::set_var("CURL_CA_BUNDLE", path) };
             return;
         }
     }

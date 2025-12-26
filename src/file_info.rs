@@ -1,5 +1,5 @@
-use chrono::offset::Local;
 use chrono::DateTime;
+use chrono::offset::Local;
 use std::fmt;
 use std::fs;
 use std::path::Path;

@@ -93,14 +93,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn check_stdin_input(input: &str) {
     if input == "-" {
-        eprintln!("Reading from stdin. If this is unexpected, make sure your input file is correctly specified.");
+        eprintln!(
+            "Reading from stdin. If this is unexpected, make sure your input file is correctly specified."
+        );
         // Check if stdin is connected to a terminal (interactive) using std library
         if std::io::IsTerminal::is_terminal(&std::io::stdin()) {
             eprintln!(
                 "Warning: stdin appears to be a terminal. Did you mean to specify an input file?"
             );
-            eprintln!("Note: If you're using --hist or --hist-count as the last option followed by a filename, the filename may have been interpreted as the histogram output path.");
-            eprintln!("To avoid this, either specify the input file before the flag, or use --hist=output.txt / --hist-count=output.txt syntax.");
+            eprintln!(
+                "Note: If you're using --hist or --hist-count as the last option followed by a filename, the filename may have been interpreted as the histogram output path."
+            );
+            eprintln!(
+                "To avoid this, either specify the input file before the flag, or use --hist=output.txt / --hist-count=output.txt syntax."
+            );
         }
     }
 }
