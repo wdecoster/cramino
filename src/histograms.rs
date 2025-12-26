@@ -502,7 +502,10 @@ mod tests {
         assert_eq!(histograms.read_length.bins[2].count, 1);
         assert_eq!(histograms.read_length.bins[2].bases, 5000);
 
-        let q_score = histograms.q_score.as_ref().expect("Missing Q-score histogram");
+        let q_score = histograms
+            .q_score
+            .as_ref()
+            .expect("Missing Q-score histogram");
         assert_eq!(q_score.bins.len(), 41);
         assert_eq!(q_score.bins[q10].count, 2);
         assert_eq!(q_score.bins[q10].bases, 6000);

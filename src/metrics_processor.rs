@@ -137,10 +137,7 @@ pub fn process_metrics(
                 if let Some(hist_count_file) = &args.hist_count {
                     let value_label = if args.scaled { "bases" } else { "count" };
                     if let Some(file) = hist_count_file {
-                        std::fs::write(
-                            file,
-                            format!("\nbin_start\tbin_end\t{}\n", value_label),
-                        )?;
+                        std::fs::write(file, format!("\nbin_start\tbin_end\t{}\n", value_label))?;
                     } else {
                         println!("\nbin_start\tbin_end\t{}", value_label);
                     }
@@ -155,10 +152,7 @@ pub fn process_metrics(
                 if let Some(hist_count_file) = &args.hist_count {
                     let value_label = if args.scaled { "bases" } else { "count" };
                     if let Some(file) = hist_count_file {
-                        std::fs::write(
-                            file,
-                            format!("\nbin_start\tbin_end\t{}\n", value_label),
-                        )?;
+                        std::fs::write(file, format!("\nbin_start\tbin_end\t{}\n", value_label))?;
                     } else {
                         println!("\nbin_start\tbin_end\t{}", value_label);
                     }
@@ -170,10 +164,7 @@ pub fn process_metrics(
                 if let Some(hist_count_file) = &args.hist_count {
                     let value_label = if args.scaled { "bases" } else { "count" };
                     if let Some(file) = hist_count_file {
-                        std::fs::write(
-                            file,
-                            format!("\nbin_start\tbin_end\t{}\n", value_label),
-                        )?;
+                        std::fs::write(file, format!("\nbin_start\tbin_end\t{}\n", value_label))?;
                     } else {
                         println!("\nbin_start\tbin_end\t{}", value_label);
                     }
