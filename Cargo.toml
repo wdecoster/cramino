@@ -18,7 +18,7 @@ clap = { version = "4.5.54", features = ["derive"] }
 rust-htslib = "0.51.0"
 log = "0.4.29"
 env_logger = "0.11.7"
-chrono = "0.4.22" # bumping this seems to break things
+chrono = "0.4.43" # bumping this seems to break things
 rayon = "1.5.3"
 arrow = "57.2.0"
 unzip-n = "0.1.4"
