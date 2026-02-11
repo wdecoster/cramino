@@ -30,9 +30,18 @@ pub fn print_text_output(metrics: &metrics::Metrics) {
 
     // Print identity stats if available
     if let Some(identity_stats) = &metrics.identity_stats {
-        println!("Median identity\t{:.2}", identity_stats.median_identity);
-        println!("Mean identity\t{:.2}", identity_stats.mean_identity);
-        println!("Modal identity\t{:.1}", identity_stats.modal_identity);
+        if identity_stats.is_estimated {
+            println!(
+                "Median est. identity\t{:.2}",
+                identity_stats.median_identity
+            );
+            println!("Mean est. identity\t{:.2}", identity_stats.mean_identity);
+            println!("Modal est. identity\t{:.1}", identity_stats.modal_identity);
+        } else {
+            println!("Median identity\t{:.2}", identity_stats.median_identity);
+            println!("Mean identity\t{:.2}", identity_stats.mean_identity);
+            println!("Modal identity\t{:.1}", identity_stats.modal_identity);
+        }
         println!();
     }
 

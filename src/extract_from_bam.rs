@@ -17,6 +17,7 @@ pub struct Data {
     pub ends: Option<Vec<i64>>,
     pub phasesets: Option<Vec<Option<u32>>>,
     pub exons: Option<Vec<usize>>,
+    pub is_ubam: bool,
 }
 
 pub struct QScoreHistogramData {
@@ -66,7 +67,7 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
     let hist_requested = args.hist.is_some() || args.hist_count.is_some();
     let mut q_score_counts = Vec::new();
     let mut q_score_bases = Vec::new();
-    if hist_requested && !args.ubam {
+    if hist_requested {
         q_score_counts = vec![0u64; 41];
         q_score_bases = vec![0u128; 41];
     }
@@ -156,7 +157,17 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         if args.spliced {
             exons.push(get_exon_number(&read));
         }
-        if !args.ubam {
+        if args.ubam {
+            // For unmapped reads, estimate accuracy from per-base Q-scores
+            let accuracy = qscore_to_accuracy(&read);
+            identities.push(accuracy);
+            if hist_requested {
+                let phred = crate::utils::accuracy_to_phred(accuracy);
+                let index = if phred < 40 { phred } else { 40 };
+                q_score_counts[index] += 1;
+                q_score_bases[index] += read_length;
+            }
+        } else {
             let identity = gap_compressed_identity(read);
             identities.push(identity);
             if hist_requested {
@@ -172,6 +183,7 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             true => crate::feather::save_as_arrow_ubam(
                 s.to_string(),
                 lengths.iter().map(|x| *x as u64).collect(),
+                identities.clone(),
             ),
             false => crate::feather::save_as_arrow(
                 s.to_string(),
@@ -189,8 +201,8 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             lengths: Some(lengths),
             num_reads,
             all_counts,
-            identities: if !args.ubam { Some(identities) } else { None },
-            q_score_hist: if hist_requested && !args.ubam {
+            identities: Some(identities),
+            q_score_hist: if hist_requested {
                 Some(QScoreHistogramData {
                     counts: q_score_counts,
                     bases: q_score_bases,
@@ -207,6 +219,7 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
             ends: if args.phased { Some(ends) } else { None },
             phasesets: if args.phased { Some(phasesets) } else { None },
             exons: if args.spliced { Some(exons) } else { None },
+            is_ubam: args.ubam,
         },
         header,
     )
@@ -241,6 +254,28 @@ fn gap_compressed_identity(record: std::rc::Rc<rust_htslib::bam::Record>) -> f64
                         / (matches + gap_count) as f64))
         }
     }
+}
+
+/// Computes the mean estimated accuracy (%) from per-base Q-scores
+/// Q-score is Phred-scaled: Q = -10 * log10(P_error)
+/// This function converts each Q-score to probability of correctness
+/// and returns the average as a percentage.
+fn qscore_to_accuracy(record: &bam::Record) -> f64 {
+    let quals = record.qual();
+    if quals.is_empty() || quals.iter().all(|&q| q == 255) {
+        // 255 indicates missing quality - return 0.0 as fallback
+        return 0.0;
+    }
+
+    let sum_accuracy: f64 = quals
+        .iter()
+        .map(|&q| {
+            // P_error = 10^(-Q/10), P_correct = 1 - P_error
+            1.0 - 10_f64.powf(-(q as f64) / 10.0)
+        })
+        .sum();
+
+    100.0 * sum_accuracy / quals.len() as f64
 }
 
 fn get_nm_tag(record: &bam::Record) -> u32 {
@@ -318,4 +353,76 @@ fn get_exon_number(record: &bam::Record) -> usize {
 
 fn softclipped_bases(read: &bam::Record) -> u128 {
     (read.cigar().leading_softclips() + read.cigar().trailing_softclips()) as u128
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test the Q-score to accuracy conversion formula
+    /// Q = 10 means P_error = 0.1, P_correct = 0.9, accuracy = 90%
+    /// Q = 20 means P_error = 0.01, P_correct = 0.99, accuracy = 99%
+    /// Q = 30 means P_error = 0.001, P_correct = 0.999, accuracy = 99.9%
+    #[test]
+    fn test_qscore_to_probability_formula() {
+        // Q = 10: error prob = 10^(-10/10) = 0.1, accuracy = 0.9
+        let q10_accuracy = 1.0 - 10_f64.powf(-10.0 / 10.0);
+        assert!((q10_accuracy - 0.9).abs() < 1e-10);
+
+        // Q = 20: error prob = 10^(-20/10) = 0.01, accuracy = 0.99
+        let q20_accuracy = 1.0 - 10_f64.powf(-20.0 / 10.0);
+        assert!((q20_accuracy - 0.99).abs() < 1e-10);
+
+        // Q = 30: error prob = 10^(-30/10) = 0.001, accuracy = 0.999
+        let q30_accuracy = 1.0 - 10_f64.powf(-30.0 / 10.0);
+        assert!((q30_accuracy - 0.999).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_qscore_to_accuracy_with_record() {
+        // Create a test record with known quality scores
+        let mut record = bam::Record::new();
+        // Set a simple read with quality scores of Q20
+        // For a read with all Q20 bases, expected accuracy = 99%
+        let qname = b"test_read";
+        let seq = b"ACGT";
+        let qual = vec![20u8; 4]; // All Q20
+        record.set(qname, None, seq, &qual);
+
+        let accuracy = qscore_to_accuracy(&record);
+        // Expected: 100 * (1 - 0.01) = 99.0
+        assert!((accuracy - 99.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_qscore_to_accuracy_mixed_qualities() {
+        // Create a test record with mixed quality scores
+        let mut record = bam::Record::new();
+        let qname = b"test_read";
+        let seq = b"ACGT";
+        // Mix of Q10, Q20, Q30, Q40
+        let qual = vec![10u8, 20, 30, 40];
+        record.set(qname, None, seq, &qual);
+
+        let accuracy = qscore_to_accuracy(&record);
+        // Q10: 0.9, Q20: 0.99, Q30: 0.999, Q40: 0.9999
+        // Average: (0.9 + 0.99 + 0.999 + 0.9999) / 4 = 0.972225
+        // As percentage: 97.2225
+        let expected = 100.0 * (0.9 + 0.99 + 0.999 + 0.9999) / 4.0;
+        assert!((accuracy - expected).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_qscore_to_accuracy_missing_quality() {
+        // Create a test record with missing quality (all 255)
+        let mut record = bam::Record::new();
+        let qname = b"test_read";
+        let seq = b"ACGT";
+        let qual = vec![255u8; 4]; // Missing quality indicator
+        record.set(qname, None, seq, &qual);
+
+        let accuracy = qscore_to_accuracy(&record);
+        // Should return 0.0 for missing quality
+        assert!((accuracy - 0.0).abs() < 0.01);
+    }
 }

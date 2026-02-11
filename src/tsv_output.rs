@@ -39,12 +39,21 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
 
     // Identity stats (if available)
     if let Some(identity_stats) = &metrics.identity_stats {
-        headers.push("median_identity");
-        values.push(format!("{:.2}", identity_stats.median_identity));
-        headers.push("mean_identity");
-        values.push(format!("{:.2}", identity_stats.mean_identity));
-        headers.push("modal_identity");
-        values.push(format!("{:.1}", identity_stats.modal_identity));
+        if identity_stats.is_estimated {
+            headers.push("median_est_identity");
+            values.push(format!("{:.2}", identity_stats.median_identity));
+            headers.push("mean_est_identity");
+            values.push(format!("{:.2}", identity_stats.mean_identity));
+            headers.push("modal_est_identity");
+            values.push(format!("{:.1}", identity_stats.modal_identity));
+        } else {
+            headers.push("median_identity");
+            values.push(format!("{:.2}", identity_stats.median_identity));
+            headers.push("mean_identity");
+            values.push(format!("{:.2}", identity_stats.mean_identity));
+            headers.push("modal_identity");
+            values.push(format!("{:.1}", identity_stats.modal_identity));
+        }
     }
 
     // Phase stats (if available)

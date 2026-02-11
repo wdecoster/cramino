@@ -491,6 +491,7 @@ mod tests {
             ends: None,
             phasesets: None,
             exons: None,
+            is_ubam: false,
         };
 
         let histograms = build_histograms(&data);

@@ -207,6 +207,7 @@ pub fn process_metrics(
             median_identity: calculations::median(identities),
             mean_identity: identities.iter().sum::<f64>() / (identities.len() as f64),
             modal_identity: calculations::modal_accuracy(identities),
+            is_estimated: metrics_data.is_ubam,
         });
     }
 

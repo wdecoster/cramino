@@ -52,6 +52,8 @@ pub struct IdentityStats {
     pub median_identity: f64,
     pub mean_identity: f64,
     pub modal_identity: f64,
+    #[serde(default)]
+    pub is_estimated: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -28,11 +28,17 @@ pub fn save_as_arrow(filename: String, lengths: Vec<u64>, identities: Vec<f64>) 
     writer.finish().expect("finish write arrow error");
 }
 
-pub fn save_as_arrow_ubam(filename: String, lengths: Vec<u64>) {
+pub fn save_as_arrow_ubam(filename: String, lengths: Vec<u64>, qualities: Vec<f64>) {
+    let qualities_array = Arc::new(Float64Array::from(qualities)) as _;
     let lengths_array = Arc::new(UInt64Array::from(lengths)) as _;
-    let batch = RecordBatch::try_from_iter([("lengths", lengths_array)]).unwrap();
+    let batch =
+        RecordBatch::try_from_iter([("identities", qualities_array), ("lengths", lengths_array)])
+            .unwrap();
 
-    let schema = Schema::new(vec![Field::new("lengths", DataType::UInt64, false)]);
+    let schema = Schema::new(vec![
+        Field::new("identities", DataType::Float64, false),
+        Field::new("lengths", DataType::UInt64, false),
+    ]);
     let buffer = File::create(filename).expect("create file error");
 
     let mut writer = FileWriter::try_new(buffer, &schema).expect("create arrow file writer error");
