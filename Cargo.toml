@@ -20,7 +20,7 @@ log = "0.4.29"
 env_logger = "0.11.10"
 chrono = "0.4.44" 
 rayon = "1.5.3"
-arrow = "58.0.0"
+arrow = "58.1.0"
 unzip-n = "0.1.4"
 itertools = "0.14.0"
 
