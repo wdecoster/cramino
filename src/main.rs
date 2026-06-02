@@ -112,7 +112,7 @@ fn check_stdin_input(input: &str) {
 }
 
 #[cfg(test)]
-#[ctor::ctor]
+#[ctor::ctor(unsafe)]
 fn init() {
     env_logger::init();
 }
