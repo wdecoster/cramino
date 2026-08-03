@@ -1,6 +1,11 @@
+# Dependabot configuration.
+# Tuned per GitHub's "tame Dependabot" guidance: batch version updates into a
+# few grouped PRs on a slow (monthly) cadence, with a release cooldown. Security
+# updates ignore groups/schedule and still open immediately.
+
 version: 2
 updates:
-  # Enable version updates for Cargo
+  # Cargo (Rust)
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
@@ -19,14 +24,20 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-    # Group all patch updates together
+    # Minor+patch land together; majors are grouped separately so one breaking
+    # bump can't wedge the routine batch. (Previously only patch updates were
+    # grouped, so minors and majors opened as individual PRs.)
     groups:
-      patch-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "patch"
-    # Allow both direct and indirect dependency updates
+      cargo-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      cargo-major:
+        patterns: ["*"]
+        update-types: ["major"]
+    # Wait a few days after a release before opening a version-update PR, so a
+    # compromised fresh release has time to be flagged.
+    cooldown:
+      default-days: 7
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
