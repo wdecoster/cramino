@@ -37,6 +37,7 @@ pub fn phase_metrics(
     phaseblocks
 }
 
+/// Median phaseblock length, which requires a sorted array
 pub fn median(array: &[i64]) -> f64 {
     if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
@@ -47,6 +48,7 @@ pub fn median(array: &[i64]) -> f64 {
     }
 }
 
+/// N50 of the phaseblock lengths, which requires the lengths sorted in descending order
 pub fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
     let mut acc = 0;
     for val in lengths.iter() {
@@ -57,4 +59,26 @@ pub fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
     }
 
     lengths[lengths.len() - 1]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_median_of_sorted_phaseblocks() {
+        // phaseblocks have to be sorted by the caller, as they are collected in genomic order
+        let mut phaseblocks = vec![100, 5000, 300];
+        phaseblocks.sort_unstable_by(|a, b| b.cmp(a));
+        assert_eq!(median(&phaseblocks), 300.0);
+    }
+
+    #[test]
+    fn test_n50_of_sorted_phaseblocks() {
+        // sorted descending, the accumulated length passes half of 5400 at 5000
+        let mut phaseblocks = vec![100, 5000, 300];
+        let total = phaseblocks.iter().sum::<i64>();
+        phaseblocks.sort_unstable_by(|a, b| b.cmp(a));
+        assert_eq!(get_n50(&phaseblocks, total), 5000);
+    }
 }
