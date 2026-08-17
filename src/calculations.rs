@@ -52,7 +52,12 @@ pub fn median_phaseblocks(mut array: Vec<f32>) -> f32 {
     }
 }
 
+/// Median number of exons per read.
+/// The exon counts are collected in the order in which the reads appear in the file,
+/// so they have to be sorted here before taking the middle value.
 pub fn median_splice(array: &[usize]) -> usize {
+    let mut array = array.to_vec();
+    array.sort_unstable();
     if array.len().is_multiple_of(2) {
         let ind_left = array.len() / 2 - 1;
         let ind_right = array.len() / 2;
@@ -107,6 +112,21 @@ mod tests {
     fn test_median_no_element() {
         let v3 = vec![];
         assert_eq!(median_phaseblocks(v3), 0.0);
+    }
+
+    #[test]
+    fn test_median_splice_unsorted() {
+        // exon counts arrive in the order of the reads in the file, so the median
+        // has to be independent of that order
+        assert_eq!(median_splice(&[1, 9, 2]), 2);
+        assert_eq!(median_splice(&[9, 2, 1]), 2);
+        assert_eq!(median_splice(&[2, 1, 9]), 2);
+    }
+
+    #[test]
+    fn test_median_splice_even() {
+        // the two middle values of the sorted array are 2 and 4
+        assert_eq!(median_splice(&[7, 2, 1, 4]), 3);
     }
 
     #[test]

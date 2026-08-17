@@ -86,15 +86,13 @@ pub fn extract(args: &crate::Cli) -> (Data, rust_htslib::bam::Header) {
         bam::Reader::from_path(&args.input)
             .expect("Error opening BAM/CRAM file.\nIs the input file correct?\n\n\n\n")
     };
-    if args.input.ends_with(".cram") & args.reference.is_some() {
+    if let Some(reference) = &args.reference
+        && args.input.ends_with(".cram")
+    {
         // bam.set_cram_option(htslib::CFR_REQUIRED_FIELDS, htslib::sam_fields_SAM_AUX as i32)
         //     .expect("Failed setting cram options");
-        bam.set_reference(
-            args.reference
-                .as_ref()
-                .expect("Failed setting reference for CRAM file"),
-        )
-        .expect("Failed setting reference for CRAM file");
+        bam.set_reference(reference)
+            .expect("Failed setting reference for CRAM file");
     }
     if args.input.ends_with(".cram") {
         bam.set_cram_options(

@@ -213,9 +213,9 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
     .expect("Unable to write histogram");
     for (index, (entry, bp)) in hist.counts.iter().zip(hist.bases.iter()).enumerate() {
         let bar = if scaled {
-            "∎".repeat(((*bp as usize) / dotsize).max(0))
+            "∎".repeat((*bp as usize) / dotsize)
         } else {
-            "∎".repeat(((*entry as usize) / dotsize).max(0))
+            "∎".repeat((*entry as usize) / dotsize)
         };
         writeln!(
             writer,
@@ -231,9 +231,9 @@ fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool
     }
     if overflow > 0 {
         let bar = if scaled {
-            "∎".repeat(((overflow_bp as usize) / dotsize).max(0))
+            "∎".repeat((overflow_bp as usize) / dotsize)
         } else {
-            "∎".repeat((overflow / dotsize).max(0))
+            "∎".repeat(overflow / dotsize)
         };
         writeln!(writer, "{: >11} {}", format!("{}+", hist.max_value), bar)
             .expect("Unable to write histogram");

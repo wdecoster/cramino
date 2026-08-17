@@ -225,6 +225,11 @@ pub fn process_metrics(
 
         if !phaseblocks.is_empty() {
             let phased_bases = phaseblocks.iter().sum::<i64>();
+            // the phaseblocks are collected in genomic order, while both the median and
+            // the N50 need them sorted by length. The original vector is left untouched
+            // for the histogram, which bins the lengths.
+            let mut phaseblocks_by_length = phaseblocks.clone();
+            phaseblocks_by_length.sort_unstable_by(|a, b| b.cmp(a));
             let phased_reads = metrics_data
                 .phasesets
                 .as_ref()
@@ -237,8 +242,8 @@ pub fn process_metrics(
                 fraction_phased: (phased_reads as f32) / (num_reads as f32),
                 num_phaseblocks: phaseblocks.len(),
                 total_bases_phased_gb: phased_bases as f64 / 1e9,
-                median_phaseblock_length: phased::median(&phaseblocks),
-                n50_phaseblock_length: phased::get_n50(&phaseblocks, phased_bases),
+                median_phaseblock_length: phased::median(&phaseblocks_by_length),
+                n50_phaseblock_length: phased::get_n50(&phaseblocks_by_length, phased_bases),
             });
         }
         Some(phaseblocks)
@@ -280,7 +285,7 @@ pub fn process_metrics(
     }
 
     // Add splicing metrics if requested
-    if args.spliced && metrics_data.exons.is_some() {
+    if args.spliced && metrics_data.exons.as_ref().is_some_and(|e| !e.is_empty()) {
         let exon_counts = metrics_data.exons.as_ref().unwrap();
         let num_reads = exon_counts.len();
         let num_single_exon = exon_counts.iter().filter(|&&x| x == 1).count();
