@@ -10,14 +10,17 @@ pub fn print_text_output(metrics: &metrics::Metrics) {
         metrics.alignment_stats.num_alignments
     );
     println!(
-        "% from total alignments\t{:.2}",
+        "% from total reads\t{:.2}",
         metrics.alignment_stats.percent_from_total
     );
     println!("Number of reads\t{}", metrics.alignment_stats.num_reads);
 
     // Print read stats
     println!("Yield [Gb]\t{:.2}", metrics.read_stats.yield_gb);
-    println!("Mean coverage\t{:.2}", metrics.read_stats.mean_coverage);
+    match metrics.read_stats.mean_coverage {
+        Some(coverage) => println!("Mean coverage\t{:.2}", coverage),
+        None => println!("Mean coverage\tNA"),
+    }
     println!(
         "Yield [Gb] (>25kb)\t{:.2}",
         metrics.read_stats.yield_gb_long
@@ -26,22 +29,38 @@ pub fn print_text_output(metrics: &metrics::Metrics) {
     println!("N75\t{}", metrics.read_stats.n75);
     println!("Median length\t{:.2}", metrics.read_stats.median_length);
     println!("Mean length\t{:.2}", metrics.read_stats.mean_length);
+    println!("N50 aligned\t{}", metrics.read_stats.n50_aligned);
+    println!("N75 aligned\t{}", metrics.read_stats.n75_aligned);
+    println!(
+        "Median length aligned\t{:.2}",
+        metrics.read_stats.median_length_aligned
+    );
+    println!(
+        "Mean length aligned\t{:.2}",
+        metrics.read_stats.mean_length_aligned
+    );
     println!();
 
     // Print identity stats if available
     if let Some(identity_stats) = &metrics.identity_stats {
-        if identity_stats.is_estimated {
-            println!(
-                "Median est. identity\t{:.2}",
-                identity_stats.median_identity
-            );
-            println!("Mean est. identity\t{:.2}", identity_stats.mean_identity);
-            println!("Modal est. identity\t{:.1}", identity_stats.modal_identity);
-        } else {
-            println!("Median identity\t{:.2}", identity_stats.median_identity);
-            println!("Mean identity\t{:.2}", identity_stats.mean_identity);
-            println!("Modal identity\t{:.1}", identity_stats.modal_identity);
-        }
+        println!("Median identity\t{:.2}", identity_stats.median_identity);
+        println!("Mean identity\t{:.2}", identity_stats.mean_identity);
+        println!("Modal identity\t{:.1}", identity_stats.modal_identity);
+        println!();
+    }
+    if let Some(identity_stats) = &metrics.estimated_identity_stats {
+        println!(
+            "Median estimated identity\t{:.2}",
+            identity_stats.median_estimated_identity
+        );
+        println!(
+            "Mean estimated identity\t{:.2}",
+            identity_stats.mean_estimated_identity
+        );
+        println!(
+            "Modal estimated identity\t{:.1}",
+            identity_stats.modal_estimated_identity
+        );
         println!();
     }
 
@@ -67,25 +86,11 @@ pub fn print_text_output(metrics: &metrics::Metrics) {
     // Print karyotype stats if available
     if let Some(karyotype_stats) = &metrics.karyotype_stats {
         if !karyotype_stats.is_empty() {
-            // Calculate median for normalization
-            let counts: Vec<f32> = karyotype_stats.iter().map(|c| c.normalized_count).collect();
-            let median_count = if !counts.is_empty() {
-                let mut counts_clone = counts.clone();
-                counts_clone.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                counts_clone[counts_clone.len() / 2]
-            } else {
-                1.0 // Default if no data
-            };
-
             println!("\n\n# Normalized read count per chromosome\n");
-            let mut sorted_stats = karyotype_stats.clone();
-            sorted_stats.sort_by(|a, b| a.chromosome.cmp(&b.chromosome));
-
-            for chrom_data in sorted_stats {
+            for chrom_data in karyotype_stats {
                 println!(
                     "{}\t{:.2}",
-                    chrom_data.chromosome,
-                    chrom_data.normalized_count / median_count
+                    chrom_data.chromosome, chrom_data.normalized_count
                 );
             }
         } else {

@@ -6,8 +6,13 @@ pub struct Metrics {
     pub alignment_stats: AlignmentStats,
     pub read_stats: ReadStats,
 
+    /// Gap-compressed identity of aligned reads
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identity_stats: Option<IdentityStats>,
+
+    /// Identity estimated from the base qualities, with --ubam
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub estimated_identity_stats: Option<EstimatedIdentityStats>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase_stats: Option<PhaseStats>,
@@ -36,15 +41,23 @@ pub struct AlignmentStats {
     pub num_reads: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ReadStats {
+    /// Yield and coverage are of the aligned bases
     pub yield_gb: f64,
-    pub mean_coverage: f64,
+    /// Not available without reference sequences in the header, e.g. for a ubam
+    pub mean_coverage: Option<f64>,
     pub yield_gb_long: f64,
+    /// Statistics of the full read lengths, i.e. of the primary alignments including clipped bases
     pub n50: u128,
     pub n75: u128,
     pub median_length: f64,
     pub mean_length: f64,
+    /// Statistics of the aligned lengths of the primary and supplementary alignments, without clipped bases
+    pub n50_aligned: u128,
+    pub n75_aligned: u128,
+    pub median_length_aligned: f64,
+    pub mean_length_aligned: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -52,8 +65,13 @@ pub struct IdentityStats {
     pub median_identity: f64,
     pub mean_identity: f64,
     pub modal_identity: f64,
-    #[serde(default)]
-    pub is_estimated: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EstimatedIdentityStats {
+    pub median_estimated_identity: f64,
+    pub mean_estimated_identity: f64,
+    pub modal_estimated_identity: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -68,7 +86,9 @@ pub struct PhaseStats {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ChromosomeData {
     pub chromosome: String,
+    /// Number of reads, i.e. primary alignments
     pub count: usize,
+    /// Reads per bp, relative to the median over all chromosomes with reads
     pub normalized_count: f32,
 }
 
@@ -112,16 +132,9 @@ impl Metrics {
                 percent_from_total: 0.0,
                 num_reads: 0,
             },
-            read_stats: ReadStats {
-                yield_gb: 0.0,
-                mean_coverage: 0.0,
-                yield_gb_long: 0.0,
-                n50: 0,
-                n75: 0,
-                median_length: 0.0,
-                mean_length: 0.0,
-            },
+            read_stats: ReadStats::default(),
             identity_stats: None,
+            estimated_identity_stats: None,
             phase_stats: None,
             karyotype_stats: None,
             splice_stats: None,
