@@ -25,7 +25,12 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     headers.push("yield_gb");
     values.push(format!("{:.2}", metrics.read_stats.yield_gb));
     headers.push("mean_coverage");
-    values.push(format!("{:.2}", metrics.read_stats.mean_coverage));
+    values.push(
+        metrics
+            .read_stats
+            .mean_coverage
+            .map_or("NA".to_string(), |c| format!("{:.2}", c)),
+    );
     headers.push("yield_gb_long");
     values.push(format!("{:.2}", metrics.read_stats.yield_gb_long));
     headers.push("n50");
@@ -36,24 +41,31 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
     values.push(format!("{:.2}", metrics.read_stats.median_length));
     headers.push("mean_length");
     values.push(format!("{:.2}", metrics.read_stats.mean_length));
+    headers.push("n50_aligned");
+    values.push(metrics.read_stats.n50_aligned.to_string());
+    headers.push("n75_aligned");
+    values.push(metrics.read_stats.n75_aligned.to_string());
+    headers.push("median_length_aligned");
+    values.push(format!("{:.2}", metrics.read_stats.median_length_aligned));
+    headers.push("mean_length_aligned");
+    values.push(format!("{:.2}", metrics.read_stats.mean_length_aligned));
 
     // Identity stats (if available)
     if let Some(identity_stats) = &metrics.identity_stats {
-        if identity_stats.is_estimated {
-            headers.push("median_est_identity");
-            values.push(format!("{:.2}", identity_stats.median_identity));
-            headers.push("mean_est_identity");
-            values.push(format!("{:.2}", identity_stats.mean_identity));
-            headers.push("modal_est_identity");
-            values.push(format!("{:.1}", identity_stats.modal_identity));
-        } else {
-            headers.push("median_identity");
-            values.push(format!("{:.2}", identity_stats.median_identity));
-            headers.push("mean_identity");
-            values.push(format!("{:.2}", identity_stats.mean_identity));
-            headers.push("modal_identity");
-            values.push(format!("{:.1}", identity_stats.modal_identity));
-        }
+        headers.push("median_identity");
+        values.push(format!("{:.2}", identity_stats.median_identity));
+        headers.push("mean_identity");
+        values.push(format!("{:.2}", identity_stats.mean_identity));
+        headers.push("modal_identity");
+        values.push(format!("{:.1}", identity_stats.modal_identity));
+    }
+    if let Some(identity_stats) = &metrics.estimated_identity_stats {
+        headers.push("median_estimated_identity");
+        values.push(format!("{:.2}", identity_stats.median_estimated_identity));
+        headers.push("mean_estimated_identity");
+        values.push(format!("{:.2}", identity_stats.mean_estimated_identity));
+        headers.push("modal_estimated_identity");
+        values.push(format!("{:.1}", identity_stats.modal_estimated_identity));
     }
 
     // Phase stats (if available)
@@ -78,6 +90,18 @@ pub fn print_tsv_output(metrics: &metrics::Metrics) {
         values.push(format!("{:.2}", splice_stats.mean_exons));
         headers.push("fraction_unspliced");
         values.push(format!("{:.2}", splice_stats.fraction_unspliced));
+    }
+
+    // Karyotype (if available), with a column per chromosome
+    let karyotype_headers: Vec<String> = metrics
+        .karyotype_stats
+        .iter()
+        .flatten()
+        .map(|c| format!("karyotype_{}", c.chromosome))
+        .collect();
+    headers.extend(karyotype_headers.iter().map(String::as_str));
+    for chrom_data in metrics.karyotype_stats.iter().flatten() {
+        values.push(format!("{:.2}", chrom_data.normalized_count));
     }
 
     // Print headers and values as TSV

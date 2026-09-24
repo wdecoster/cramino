@@ -1,39 +1,38 @@
 use itertools::izip;
 use log::error;
 
+/// Length of each phaseblock, from the leftmost start to the rightmost end of the alignments
+/// (primary and supplementary) with the same phaseset on the same chromosome. Reads of
+/// different phasesets can overlap, so the reads are grouped per phaseset rather than split
+/// at each change of phaseset along the genome.
 pub fn phase_metrics(
     tids: &[i32],
     starts: Vec<i64>,
     ends: Vec<i64>,
-    phasesets: &Vec<Option<u32>>,
+    phasesets: &[Option<u32>],
 ) -> Vec<i64> {
-    let mut phased_reads = izip!(tids, starts, ends, phasesets)
-        .filter(|(_, _, _, p)| p.is_some())
+    let mut phased_reads = izip!(tids, phasesets, starts, ends)
+        .filter_map(|(tid, phaseset, start, end)| phaseset.map(|p| (*tid, p, start, end)))
         .collect::<Vec<_>>();
-    phased_reads.sort_unstable();
-
-    let num_phased_reads = phased_reads.len();
-    if num_phased_reads == 0 {
+    if phased_reads.is_empty() {
         error!("Not a single phased read found!");
         return vec![];
     }
+    phased_reads.sort_unstable();
 
-    let mut phased_reads_iter = phased_reads.into_iter();
-    let (mut chrom1, mut start1, mut block_end, mut phaseset1) = phased_reads_iter.next().unwrap();
     let mut phaseblocks = vec![];
-    for (chrom, start, end, phaseset) in phased_reads_iter {
-        if chrom == chrom1 && phaseset == phaseset1 {
-            block_end = end;
-            continue;
+    let mut reads = phased_reads.into_iter();
+    let (mut block_tid, mut block_phaseset, mut block_start, mut block_end) = reads.next().unwrap();
+    for (tid, phaseset, start, end) in reads {
+        if tid == block_tid && phaseset == block_phaseset {
+            // reads are sorted by start, but a later read can end before an earlier one
+            block_end = block_end.max(end);
         } else {
-            phaseblocks.push(block_end - start1);
-            chrom1 = chrom;
-            start1 = start;
-            block_end = end;
-            phaseset1 = phaseset;
+            phaseblocks.push(block_end - block_start);
+            (block_tid, block_phaseset, block_start, block_end) = (tid, phaseset, start, end);
         }
     }
-    phaseblocks.push(block_end - start1);
+    phaseblocks.push(block_end - block_start);
     phaseblocks
 }
 
@@ -53,7 +52,7 @@ pub fn get_n50(lengths: &[i64], nb_bases_total: i64) -> i64 {
     let mut acc = 0;
     for val in lengths.iter() {
         acc += *val;
-        if acc > nb_bases_total / 2 {
+        if 2 * acc >= nb_bases_total {
             return *val;
         }
     }
@@ -80,5 +79,40 @@ mod tests {
         let total = phaseblocks.iter().sum::<i64>();
         phaseblocks.sort_unstable_by(|a, b| b.cmp(a));
         assert_eq!(get_n50(&phaseblocks, total), 5000);
+    }
+
+    #[test]
+    fn test_n50_when_cumulative_sum_hits_exactly_half() {
+        assert_eq!(get_n50(&[5, 3, 2], 10), 5);
+    }
+
+    #[test]
+    fn test_phaseblock_extends_to_rightmost_end() {
+        // the second read starts later but ends earlier than the first
+        let blocks = phase_metrics(&[0, 0], vec![0, 100], vec![10000, 200], &[Some(1), Some(1)]);
+        assert_eq!(blocks, vec![10000]);
+    }
+
+    #[test]
+    fn test_overlapping_phasesets_are_not_split() {
+        // reads of phaseset 1 and 2 alternate along the genome
+        let blocks = phase_metrics(
+            &[0, 0, 0, 0],
+            vec![0, 1500, 2000, 2500],
+            vec![1000, 2500, 3000, 3500],
+            &[Some(1), Some(2), Some(1), Some(2)],
+        );
+        assert_eq!(blocks, vec![3000, 2000]);
+    }
+
+    #[test]
+    fn test_same_phaseset_on_other_chromosome_is_other_block() {
+        let blocks = phase_metrics(
+            &[0, 1, 1],
+            vec![0, 0, 50],
+            vec![100, 100, 400],
+            &[Some(1), Some(1), None],
+        );
+        assert_eq!(blocks, vec![100, 100]);
     }
 }

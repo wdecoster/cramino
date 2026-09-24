@@ -19,11 +19,7 @@ impl BamFile {
     }
 
     pub fn file_time(&self) -> String {
-        if self.path == "-"
-            || self.path.starts_with("http")
-            || self.path.starts_with("ftp")
-            || self.path.starts_with("s3")
-        {
+        if self.path == "-" || crate::utils::is_remote(&self.path) {
             return "NA".to_string();
         }
         let metadata = fs::metadata(&self.path);

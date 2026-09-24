@@ -14,7 +14,7 @@ struct LengthHistogramData {
     overflow_bases: u128,
 }
 
-fn compute_length_histogram_data(array: &[u128]) -> Option<LengthHistogramData> {
+fn compute_length_histogram_data(array: &[u32]) -> Option<LengthHistogramData> {
     if array.is_empty() {
         return None;
     }
@@ -36,7 +36,7 @@ fn compute_length_histogram_data(array: &[u128]) -> Option<LengthHistogramData> 
     let mut overflow_count = 0u64;
     let mut overflow_bases = 0u128;
 
-    for &value in array {
+    for value in array.iter().map(|v| *v as u128) {
         if value >= max_value as u128 {
             overflow_count += 1;
             overflow_bases += value;
@@ -57,7 +57,7 @@ fn compute_length_histogram_data(array: &[u128]) -> Option<LengthHistogramData> 
     })
 }
 
-fn build_length_histogram(array: &[u128]) -> metrics::Histogram {
+fn build_length_histogram(array: &[u32]) -> metrics::Histogram {
     let Some(hist) = compute_length_histogram_data(array) else {
         return metrics::Histogram {
             step: 2000,
@@ -145,7 +145,7 @@ pub fn build_histograms(metrics_data: &extract_from_bam::Data) -> metrics::Histo
     }
 }
 
-fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W, scaled: bool) {
+fn output_histogram_counts_tsv<W: Write>(array: &[u32], writer: &mut W, scaled: bool) {
     let Some(hist) = compute_length_histogram_data(array) else {
         return;
     };
@@ -189,7 +189,7 @@ fn output_histogram_counts_tsv<W: Write>(array: &[u128], writer: &mut W, scaled:
 // as well as for future customizations
 // in principle it would be possible to enable the user to change the step size or max value, but I don't want to add too many options to the CLI
 
-fn make_histogram_lengths<W: Write>(array: &[u128], writer: &mut W, scaled: bool) {
+fn make_histogram_lengths<W: Write>(array: &[u32], writer: &mut W, scaled: bool) {
     let Some(hist) = compute_length_histogram_data(array) else {
         return;
     };
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn json_histograms_include_bins_with_scaled_and_unscaled_values() {
-        let lengths = vec![1000u128, 3000, 5000];
+        let lengths = vec![1000u32, 3000, 5000];
         let identities = vec![90.0, 99.0, 90.0];
         let q10 = utils::accuracy_to_phred(90.0);
         let q99 = utils::accuracy_to_phred(99.0);
@@ -479,17 +479,20 @@ mod tests {
 
         let data = extract_from_bam::Data {
             lengths: Some(lengths),
+            read_lengths: vec![],
             num_reads: 3,
-            all_counts: 3,
+            all_reads: 3,
             identities: Some(identities),
             q_score_hist: Some(extract_from_bam::QScoreHistogramData {
                 counts: q_score_counts,
                 bases: q_score_bases,
             }),
             tids: None,
+            karyotype_tids: None,
             starts: None,
             ends: None,
             phasesets: None,
+            num_phased_reads: 0,
             exons: None,
             is_ubam: false,
         };
@@ -527,7 +530,7 @@ mod tests {
 
     #[test]
     fn histogram_counts_tsv_scaled_uses_bases() {
-        let lengths = vec![1000u128, 3000, 5000];
+        let lengths = vec![1000u32, 3000, 5000];
         let mut output = Vec::new();
         output_histogram_counts_tsv(&lengths, &mut output, true);
 

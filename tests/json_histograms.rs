@@ -69,14 +69,12 @@ fn json_ubam_includes_estimated_identity() {
         ubam_path,
     ];
     let json_value = run_cramino_json(args);
-    // Verify identity_stats is present for ubam mode
-    assert!(json_value.get("identity_stats").is_some());
-    // Verify the is_estimated flag is set to true
-    assert_eq!(json_value["identity_stats"]["is_estimated"], true);
-    // Verify we have the identity metrics
-    assert!(json_value["identity_stats"]["median_identity"].is_number());
-    assert!(json_value["identity_stats"]["mean_identity"].is_number());
-    assert!(json_value["identity_stats"]["modal_identity"].is_number());
+    // the identity is estimated from the base qualities for a ubam, and reported as such
+    assert!(json_value.get("identity_stats").is_none());
+    let stats = &json_value["estimated_identity_stats"];
+    assert!(stats["median_estimated_identity"].is_number());
+    assert!(stats["mean_estimated_identity"].is_number());
+    assert!(stats["modal_estimated_identity"].is_number());
 }
 
 #[test]
@@ -84,12 +82,6 @@ fn json_mapped_identity_not_estimated() {
     let bam_path = test_bam_path();
     let args = vec!["--format".to_string(), "json".to_string(), bam_path];
     let json_value = run_cramino_json(args);
-    // Verify identity_stats is present for mapped mode
-    assert!(json_value.get("identity_stats").is_some());
-    // Verify the is_estimated flag is false (or not present, defaults to false)
-    let is_estimated = json_value["identity_stats"]
-        .get("is_estimated")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    assert!(!is_estimated);
+    assert!(json_value["identity_stats"]["median_identity"].is_number());
+    assert!(json_value.get("estimated_identity_stats").is_none());
 }
