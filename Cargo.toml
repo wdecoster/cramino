@@ -15,7 +15,7 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
-rust-htslib = { version = "1.0.0", features = ["s3"] }
+rust-htslib = { version = "1.0.0", features = ["s3", "libdeflate"] }
 log = "0.4.30"
 env_logger = "0.11.10"
 chrono = "0.4.44" 
