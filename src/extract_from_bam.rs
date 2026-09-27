@@ -4,7 +4,6 @@ use rayon::prelude::*;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::{bam, bam::Read, htslib};
 use std::env;
-use std::sync::LazyLock;
 use url::Url;
 
 pub struct Data {
@@ -288,17 +287,19 @@ fn gap_compressed_identity(record: &bam::Record) -> Option<f64> {
 /// and returns the average as a percentage.
 /// None for reads without base qualities, which are therefore left out
 fn qscore_to_accuracy(record: &bam::Record) -> Option<f64> {
-    static ACCURACY: LazyLock<[f64; 256]> =
-        LazyLock::new(|| std::array::from_fn(|q| 1.0 - 10_f64.powf(-(q as f64) / 10.0)));
-
     let quals = record.qual();
     if quals.is_empty() || quals.iter().all(|&q| q == 255) {
         // 255 indicates missing quality
         return None;
     }
 
-    let accuracy = &*ACCURACY;
-    let sum_accuracy: f64 = quals.iter().map(|&q| accuracy[q as usize]).sum();
+    let sum_accuracy: f64 = quals
+        .iter()
+        .map(|&q| {
+            // P_error = 10^(-Q/10), P_correct = 1 - P_error
+            1.0 - 10_f64.powf(-(q as f64) / 10.0)
+        })
+        .sum();
 
     Some(100.0 * sum_accuracy / quals.len() as f64)
 }
