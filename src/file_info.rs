@@ -1,5 +1,3 @@
-use chrono::DateTime;
-use chrono::offset::Local;
 use std::fmt;
 use std::fs;
 use std::path::Path;
@@ -27,8 +25,10 @@ impl BamFile {
             .expect("Failed to extract metadata from file")
             .created()
         {
-            let datetime: DateTime<Local> = time.into();
-            format!("{}", datetime.format("%d/%m/%Y %T"))
+            match jiff::Zoned::try_from(time) {
+                Ok(datetime) => datetime.strftime("%d/%m/%Y %T").to_string(),
+                Err(_) => "NA".to_string(),
+            }
         } else {
             "NA".to_string()
         }
