@@ -18,9 +18,9 @@ clap = { version = "4.6.1", features = ["derive"] }
 rust-htslib = { version = "1.0.0", features = ["s3", "libdeflate"] }
 log = "0.4.30"
 env_logger = "0.11.10"
-chrono = "0.4.44" 
+jiff = "0.2" 
 rayon = "1.12.0"
-arrow = "60.0.0"
+arrow = "60.2.0"
 unzip-n = "0.1.4"
 itertools = "0.15.0"
 
